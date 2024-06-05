@@ -166,25 +166,6 @@ fn get_all_valid_excerpts_and_songs(
     (audio_excerpts, valid_songs)
 }
 
-fn get_offsets_auto(session: &RecordingSessionWithPath) -> Vec<Cut> {
-    let timestamps = get_cut_timestamps_from_song_lengths(
-        &session.session.songs,
-        session.estimated_time_first_song_secs(),
-    );
-    session
-        .session
-        .songs
-        .iter()
-        .zip(timestamps.iter())
-        .zip(timestamps[1..].iter())
-        .map(|((song, start), end)| Cut {
-            song: song.clone(),
-            start_time_secs: *start,
-            end_time_secs: *end,
-        })
-        .collect()
-}
-
 fn add_metadata_arg_if_present<T: Display>(
     command: &mut Command,
     get_str: fn(&T) -> String,
@@ -256,45 +237,4 @@ pub fn cut_song(info: &CutInfo) -> Result<()> {
         info.cut.start_time_secs,
         difference,
     ))
-}
-
-#[cfg(test)]
-mod tests {
-    use std::fs;
-    use std::path::Path;
-
-    use serde::de::DeserializeOwned;
-
-    use super::get_offsets_auto;
-    use super::CutInfo;
-    use crate::recording_session::RecordingSessionWithPath;
-
-    fn read_yaml<T: DeserializeOwned>(path: &Path) -> T {
-        let contents = fs::read_to_string(path).unwrap();
-        serde_yaml::from_str::<T>(&contents).unwrap()
-    }
-
-    #[test]
-    fn auto_offset() {
-        // Define the directory path
-        let dir_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("cut_tests");
-        for entry in fs::read_dir(dir_path).unwrap() {
-            let entry = entry.unwrap();
-            if entry.metadata().unwrap().is_dir() {
-                compare_result(&entry.path());
-            }
-        }
-    }
-
-    fn compare_result(path: &Path) {
-        let truth: Vec<CutInfo> = read_yaml(&path.join("truth.yml"));
-        let session = RecordingSessionWithPath::load_from_dir(path).unwrap();
-        let result = get_offsets_auto(&session);
-        assert_eq!(truth.len(), result.len());
-        for (truth, result) in truth.iter().zip(result.iter()) {
-            assert_eq!(truth.cut.start_time_secs, result.start_time_secs);
-            assert_eq!(truth.cut.end_time_secs, result.end_time_secs);
-            assert_eq!(truth.cut.song, result.song);
-        }
-    }
 }

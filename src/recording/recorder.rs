@@ -8,7 +8,7 @@ use super::dbus_event::DbusEvent;
 use super::dbus_event::TimedDbusEvent;
 use super::dbus_event::Timestamp;
 use super::AudioRecorder;
-use crate::config::Opts;
+use crate::config::Config;
 use crate::consts::TIME_AFTER_SESSION_END;
 use crate::recording::dbus_event::PlaybackStatus;
 use crate::recording_session::RecordingSession;
@@ -24,12 +24,12 @@ pub struct Recorder {
 }
 
 impl Recorder {
-    pub fn new(opts: &Opts, session_dir: &SessionPath) -> Result<Self> {
-        let recorder = AudioRecorder::start(opts, session_dir)?;
+    pub fn new(config: &Config, session_dir: &SessionPath) -> Result<Self> {
+        let recorder = AudioRecorder::start(config, session_dir)?;
         let recorder = Self {
             dbus_events: vec![],
             recorder,
-            dbus: DbusConnection::new(&opts.service),
+            dbus: DbusConnection::new(&config.service),
             session_dir: session_dir.clone(),
             num_songs: 0,
         };

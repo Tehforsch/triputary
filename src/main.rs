@@ -14,7 +14,7 @@ mod wav;
 
 use anyhow::Result;
 use config::Command;
-use config::Opts;
+use config::Config;
 use gui::session_manager::get_new_name;
 use log::info;
 use log::LevelFilter;
@@ -30,17 +30,17 @@ use time::UtcOffset;
 
 use crate::gui::StriputaryGui;
 
-fn record(opts: &Opts) -> Result<()> {
-    info!("Using service: {}", opts.service);
-    info!("Using sound server: {}", opts.sound_server);
-    let path = SessionPath(get_new_name(&opts.output_dir));
-    let recorder = Recorder::new(&opts, &path)?;
+fn record(config: &Config) -> Result<()> {
+    info!("Using service: {}", config.service);
+    info!("Using sound server: {}", config.sound_server);
+    let path = SessionPath(get_new_name(&config.output_dir));
+    let recorder = Recorder::new(&config, &path)?;
     let _session = recorder.record_new_session()?;
     Ok(())
 }
 
-fn monitor_dbus(opts: &Opts) {
-    let conn = DbusConnection::new(&opts.service);
+fn monitor_dbus(config: &Config) {
+    let conn = DbusConnection::new(&config.service);
     loop {
         for ev in conn.get_new_events() {
             println!("{:?}", ev);
@@ -48,8 +48,8 @@ fn monitor_dbus(opts: &Opts) {
     }
 }
 
-fn run_gui(opts: &Opts) {
-    let app = StriputaryGui::new(opts);
+fn run_gui(config: &Config) {
+    let app = StriputaryGui::new(config);
     let native_options = eframe::NativeOptions::default();
     eframe::run_native("striputary", native_options, Box::new(|_| Box::new(app)));
 }
@@ -72,12 +72,12 @@ fn init_logging(verbosity: usize) {
 }
 
 fn main() -> Result<()> {
-    let opts = Opts::from_config_and_cli();
-    init_logging(opts.verbosity);
-    match opts.command {
-        Command::Record => record(&opts)?,
-        Command::Cut => run_gui(&opts),
-        Command::MonitorDbus => monitor_dbus(&opts),
+    let config = Config::from_config_and_cli();
+    init_logging(config.verbosity);
+    match config.command {
+        Command::Record => record(&config)?,
+        Command::Cut => run_gui(&config),
+        Command::MonitorDbus => monitor_dbus(&config),
     }
     Ok(())
 }

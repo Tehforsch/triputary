@@ -23,7 +23,7 @@ use self::playback::play_excerpt;
 use self::playback::PlaybackThreadHandle;
 use self::plot::ExcerptPlot;
 use crate::audio_time::AudioTime;
-use crate::config::Opts;
+use crate::config::Config;
 use crate::cut::CutInfo;
 use crate::excerpt_collection::ExcerptCollection;
 use crate::gui::session_manager::SessionIdentifier;
@@ -48,8 +48,8 @@ pub struct StriputaryGui {
 }
 
 impl StriputaryGui {
-    pub fn new(opts: &Opts) -> Self {
-        let session_manager = SessionManager::new(&opts.output_dir);
+    pub fn new(config: &Config) -> Self {
+        let session_manager = SessionManager::new(&config.output_dir);
         let mut gui = Self {
             collection: None,
             plots: vec![],

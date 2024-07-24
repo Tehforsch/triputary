@@ -12,7 +12,7 @@ use regex::Regex;
 use subprocess::Exec;
 use subprocess::Popen;
 
-use crate::config::Opts;
+use crate::config::Config;
 use crate::config::Service;
 use crate::config::SoundServer;
 use crate::consts::STRIPUTARY_SINK_NAME;
@@ -24,10 +24,10 @@ pub struct AudioRecorder {
 }
 
 impl AudioRecorder {
-    pub fn start(opts: &Opts, session_path: &SessionPath) -> Result<Self> {
-        opts.sound_server.setup_recording(&opts, session_path)?;
+    pub fn start(config: &Config, session_path: &SessionPath) -> Result<Self> {
+        config.sound_server.setup_recording(&config, session_path)?;
         Ok(Self {
-            process: opts
+            process: config
                 .sound_server
                 .start_recording_process(&session_path.get_buffer_file())?,
             start_time: Instant::now(),
@@ -55,7 +55,7 @@ impl SoundServer {
             .context("Failed to execute record command - is parec installed?")
     }
 
-    fn setup_recording(&self, opts: &Opts, session_path: &SessionPath) -> Result<()> {
+    fn setup_recording(&self, config: &Config, session_path: &SessionPath) -> Result<()> {
         create_dir_all(&session_path.0).context("Failed to create session directory")?;
         if session_path.get_buffer_file().exists() {
             return Err(anyhow!(
@@ -68,7 +68,7 @@ impl SoundServer {
         } else {
             debug!("Sink already exists. Not creating sink");
         }
-        let index = self.get_sink_input_index(&opts.service)?;
+        let index = self.get_sink_input_index(&config.service)?;
         self.redirect_sink(index)
     }
 

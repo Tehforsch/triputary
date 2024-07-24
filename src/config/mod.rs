@@ -13,7 +13,7 @@ pub use self::sound_server::SoundServer;
 pub use cli::Command;
 
 #[derive(Clone)]
-pub struct Opts {
+pub struct Config {
     pub output_dir: PathBuf,
     pub service: Service,
     pub sound_server: SoundServer,
@@ -21,8 +21,8 @@ pub struct Opts {
     pub verbosity: usize,
 }
 
-impl Opts {
-    pub fn new(opts: CliOpts, config_file: Option<ConfigFile>) -> Opts {
+impl Config {
+    pub fn new(opts: CliOpts, config_file: Option<ConfigFile>) -> Config {
         let service = opts
             .service
             .or(config_file.as_ref().and_then(|file| file.service))
@@ -50,7 +50,7 @@ impl Opts {
 panic!("Need an output folder - either pass it as a command line argument or specify it in the config file (probably ~/.config/striputary/config.yaml")
             })
             ;
-        Opts {
+        Config {
             output_dir,
             service,
             sound_server,
@@ -59,7 +59,7 @@ panic!("Need an output folder - either pass it as a command line argument or spe
         }
     }
 
-    pub(crate) fn from_config_and_cli() -> Opts {
+    pub(crate) fn from_config_and_cli() -> Config {
         let opts = CliOpts::parse();
         let config_file = ConfigFile::read();
         if let Err(ref e) = config_file {
@@ -75,7 +75,7 @@ mod tests {
 
     use super::config_file::ConfigFile;
     use super::CliOpts;
-    use crate::config::{Opts, Service};
+    use crate::config::{Config, Service};
     use crate::Command;
 
     fn test_opts() -> CliOpts {
@@ -108,19 +108,19 @@ mod tests {
             ..test_config_file()
         };
 
-        let opts = Opts::new(p_opts.clone(), None);
+        let opts = Config::new(p_opts.clone(), None);
         assert_eq!(opts.service, SpotifyChromium);
 
         p_opts.service = Some(SpotifyNative);
-        let opts = Opts::new(p_opts.clone(), None);
+        let opts = Config::new(p_opts.clone(), None);
         assert_eq!(opts.service, SpotifyNative);
 
         p_opts.service = None;
-        let opts = Opts::new(p_opts.clone(), None);
+        let opts = Config::new(p_opts.clone(), None);
         assert_eq!(opts.service, Service::default());
 
         p_opts.service = None;
-        let opts = Opts::new(p_opts.clone(), Some(config_file));
+        let opts = Config::new(p_opts.clone(), Some(config_file));
         assert_eq!(opts.service, SpotifyChromium);
     }
 
@@ -134,12 +134,12 @@ mod tests {
             output_dir: "from_config_file".into(),
             ..test_config_file()
         };
-        let opts = Opts::new(p_opts.clone(), None);
+        let opts = Config::new(p_opts.clone(), None);
         assert!(opts.output_dir == Path::new("from_cli").to_owned());
-        let opts = Opts::new(p_opts.clone(), Some(config_file.clone()));
+        let opts = Config::new(p_opts.clone(), Some(config_file.clone()));
         assert!(opts.output_dir == Path::new("from_cli").to_owned());
         p_opts.output_dir = None;
-        let opts = Opts::new(p_opts.clone(), Some(config_file));
+        let opts = Config::new(p_opts.clone(), Some(config_file));
         assert!(opts.output_dir == Path::new("from_config_file").to_owned());
     }
 
@@ -153,6 +153,6 @@ mod tests {
             verbosity: 0,
             command: Command::Record,
         };
-        let _opts = Opts::new(p_opts.clone(), None);
+        let _opts = Config::new(p_opts.clone(), None);
     }
 }

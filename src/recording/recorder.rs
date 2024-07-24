@@ -78,7 +78,7 @@ impl Recorder {
                         _ => {}
                     }
                 }
-                self.log_new_songs();
+                self.save_and_log_new_songs();
             }
         }
     }
@@ -92,7 +92,7 @@ impl Recorder {
         info!("Recording finished.");
     }
 
-    fn log_new_songs(&mut self) {
+    fn save_and_log_new_songs(&mut self) {
         // Because we want the [DbusEvent] -> RecordingSession mapping
         // to be pure, we compute it everytime we get a new dbus event
         // and then check if any new songs have been recorded in the

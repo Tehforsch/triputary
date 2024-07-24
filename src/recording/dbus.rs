@@ -9,8 +9,9 @@ use dbus::ffidisp::Connection;
 use dbus::message::SignalArgs;
 use log::trace;
 
+use crate::config::Service;
+
 use super::dbus_event::DbusEvent;
-use crate::service::Service;
 
 pub const DBUS_LISTEN_TIMEOUT_MS: u32 = 2;
 

@@ -1,15 +1,15 @@
 mod cli;
 mod config_file;
-
-use std::path::PathBuf;
-
-use clap::Parser;
-pub use cli::Command;
-use log::{error, info};
-
-use crate::{recording::SoundServer, service::Service};
+mod service;
 
 use self::{cli::CliOpts, config_file::ConfigFile};
+use crate::recording::SoundServer;
+use clap::Parser;
+use log::{error, info};
+use std::path::PathBuf;
+
+pub use self::service::Service;
+pub use cli::Command;
 
 #[derive(Clone)]
 pub struct Opts {
@@ -74,8 +74,7 @@ mod tests {
 
     use super::config_file::ConfigFile;
     use super::CliOpts;
-    use crate::config::Opts;
-    use crate::service::Service;
+    use crate::config::{Opts, Service};
     use crate::Command;
 
     fn test_opts() -> CliOpts {

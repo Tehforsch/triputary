@@ -9,7 +9,6 @@ mod excerpt_collection;
 mod gui;
 mod recording;
 mod recording_session;
-mod service;
 mod song;
 mod wav;
 

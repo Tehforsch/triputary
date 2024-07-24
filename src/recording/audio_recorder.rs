@@ -17,9 +17,9 @@ use subprocess::Exec;
 use subprocess::Popen;
 
 use crate::config::Opts;
+use crate::config::Service;
 use crate::consts::STRIPUTARY_SINK_NAME;
 use crate::recording_session::SessionPath;
-use crate::service::Service;
 
 #[derive(Copy, Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
 pub enum SoundServer {

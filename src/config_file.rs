@@ -7,7 +7,8 @@ use anyhow::Context;
 use anyhow::Result;
 use serde::Deserialize;
 
-use crate::config;
+use crate::consts;
+
 use crate::recording::SoundServer;
 use crate::service::Service;
 
@@ -21,7 +22,7 @@ pub struct ConfigFile {
 impl ConfigFile {
     pub fn read() -> Result<Self> {
         let xdg_dirs = xdg::BaseDirectories::with_prefix("striputary").unwrap();
-        let config_path = xdg_dirs.find_config_file(config::CONFIG_FILE_NAME);
+        let config_path = xdg_dirs.find_config_file(consts::CONFIG_FILE_NAME);
         if let Some(config_path) = config_path {
             ConfigFile::from_file(&config_path)
         } else {

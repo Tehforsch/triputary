@@ -8,7 +8,7 @@ use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::config;
+use crate::consts;
 use crate::recording::dbus_event::DbusEvent;
 use crate::recording::dbus_event::TimedDbusEvent;
 use crate::recording::dbus_event::Timestamp;
@@ -62,15 +62,15 @@ pub struct SessionPath(pub PathBuf);
 
 impl SessionPath {
     pub fn get_yaml_file(&self) -> PathBuf {
-        self.0.join(config::DEFAULT_SESSION_FILE)
+        self.0.join(consts::DEFAULT_SESSION_FILE)
     }
 
     pub fn get_buffer_file(&self) -> PathBuf {
-        self.0.join(config::DEFAULT_BUFFER_FILE)
+        self.0.join(consts::DEFAULT_BUFFER_FILE)
     }
 
     pub fn get_music_dir(&self) -> PathBuf {
-        self.0.join(Path::new(config::DEFAULT_MUSIC_DIR))
+        self.0.join(Path::new(consts::DEFAULT_MUSIC_DIR))
     }
 }
 
@@ -87,7 +87,7 @@ impl RecordingSessionWithPath {
 
     pub fn load_from_dir(path: &Path) -> Result<Self> {
         Ok(Self {
-            session: RecordingSession::from_file(&path.join(config::DEFAULT_SESSION_FILE))?,
+            session: RecordingSession::from_file(&path.join(consts::DEFAULT_SESSION_FILE))?,
             path: SessionPath(path.to_owned()),
         })
     }

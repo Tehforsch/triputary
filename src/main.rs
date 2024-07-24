@@ -1,17 +1,17 @@
-pub(crate) mod audio_excerpt;
-pub(crate) mod audio_time;
-pub(crate) mod config;
-pub(crate) mod config_file;
-pub(crate) mod cut;
-pub(crate) mod data_stream;
-pub(crate) mod errors;
-pub(crate) mod excerpt_collection;
-pub(crate) mod gui;
-pub(crate) mod recording;
-pub(crate) mod recording_session;
-pub(crate) mod service;
-pub(crate) mod song;
-pub(crate) mod wav;
+mod audio_excerpt;
+mod audio_time;
+mod config_file;
+mod consts;
+mod cut;
+mod data_stream;
+mod errors;
+mod excerpt_collection;
+mod gui;
+mod recording;
+mod recording_session;
+mod service;
+mod song;
+mod wav;
 
 use std::path::PathBuf;
 

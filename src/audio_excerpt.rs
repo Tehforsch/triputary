@@ -4,8 +4,8 @@ use hound::WavSpec;
 use rodio::Source;
 
 use crate::audio_time::AudioTime;
-use crate::config::NUM_PLOT_DATA_POINTS;
-use crate::config::NUM_SAMPLES_PER_AVERAGE_VOLUME;
+use crate::consts::NUM_PLOT_DATA_POINTS;
+use crate::consts::NUM_SAMPLES_PER_AVERAGE_VOLUME;
 
 #[derive(Clone)]
 pub struct AudioExcerpt {

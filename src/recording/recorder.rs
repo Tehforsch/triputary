@@ -8,7 +8,7 @@ use super::dbus_event::DbusEvent;
 use super::dbus_event::TimedDbusEvent;
 use super::dbus_event::Timestamp;
 use super::AudioRecorder;
-use crate::config::TIME_AFTER_SESSION_END;
+use crate::consts::TIME_AFTER_SESSION_END;
 use crate::recording::dbus_event::PlaybackStatus;
 use crate::recording_session::RecordingSession;
 use crate::recording_session::SessionPath;

@@ -1,5 +1,4 @@
 use std::fmt::Display;
-use std::fs;
 use std::fs::create_dir_all;
 use std::path::Path;
 use std::path::PathBuf;
@@ -14,10 +13,10 @@ use serde::Serialize;
 
 use crate::audio_excerpt::AudioExcerpt;
 use crate::audio_time::AudioTime;
-use crate::config::MAX_OFFSET;
-use crate::config::MIN_OFFSET;
-use crate::config::READ_BUFFER;
-use crate::config::{self};
+use crate::consts::MAX_OFFSET;
+use crate::consts::MIN_OFFSET;
+use crate::consts::READ_BUFFER;
+use crate::consts::{self};
 use crate::excerpt_collection::ExcerptCollection;
 use crate::excerpt_collection::NamedExcerpt;
 use crate::recording_session::RecordingSessionWithPath;
@@ -57,15 +56,6 @@ impl CutInfo {
             },
         }
     }
-}
-
-pub fn make_test(cut_info: &[CutInfo]) {
-    let contents = serde_yaml::to_string(&cut_info).unwrap();
-    fs::write(
-        "/home/toni/projects/striputary/cut_tests/current.yml",
-        &contents,
-    )
-    .unwrap();
 }
 
 fn get_excerpt(buffer_file_name: &Path, cut_time: f64) -> Option<AudioExcerpt> {
@@ -154,7 +144,7 @@ pub fn cut_song(info: &CutInfo) -> Result<()> {
         .arg("-c:a")
         .arg("libopus")
         .arg("-b:a")
-        .arg(format!("{}", config::BITRATE));
+        .arg(format!("{}", consts::BITRATE));
     add_metadata_arg_if_present(
         &mut command,
         |title| format!("title='{}'", title),

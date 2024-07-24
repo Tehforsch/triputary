@@ -8,12 +8,12 @@ use super::dbus_event::DbusEvent;
 use super::dbus_event::TimedDbusEvent;
 use super::dbus_event::Timestamp;
 use super::AudioRecorder;
+use crate::config::Opts;
 use crate::consts::TIME_AFTER_SESSION_END;
 use crate::recording::dbus_event::PlaybackStatus;
 use crate::recording_session::RecordingSession;
 use crate::recording_session::SessionPath;
 use crate::song::Song;
-use crate::Opts;
 
 pub struct Recorder {
     dbus_events: Vec<TimedDbusEvent>,

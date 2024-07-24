@@ -16,10 +16,10 @@ use serde::Serialize;
 use subprocess::Exec;
 use subprocess::Popen;
 
+use crate::config::Opts;
 use crate::consts::STRIPUTARY_SINK_NAME;
 use crate::recording_session::SessionPath;
 use crate::service::Service;
-use crate::Opts;
 
 #[derive(Copy, Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
 pub enum SoundServer {

@@ -1,9 +1,6 @@
 use std::process::Command;
 use std::time::Instant;
 
-use anyhow::anyhow;
-use anyhow::Context;
-use anyhow::Result;
 use dbus::ffidisp::stdintf::org_freedesktop_dbus::PropertiesPropertiesChanged as PC;
 use dbus::ffidisp::Connection;
 use dbus::message::SignalArgs;
@@ -23,7 +20,7 @@ impl DbusConnection {
     pub fn new(service: &Service) -> Self {
         let connection = Connection::new_session().unwrap();
         // Add a match for this signal
-        let bus_name = service.dbus_bus_name();
+        let bus_name = service.dbus_bus_name(get_instance_of_service);
         let mstr = PC::match_str(Some(&bus_name.into()), None);
         connection.add_match(&mstr).unwrap();
         Self { connection }
@@ -50,28 +47,28 @@ impl DbusConnection {
 /// Here, we get a list of all available services
 /// and find the matching one. Returns an error
 /// if there are multiple matches.
-pub fn get_instance_of_service(service_base_name: &str) -> Result<String> {
+fn get_instance_of_service(service_base_name: &str) -> String {
     let out = Command::new("qdbus")
         .arg("--session")
         .output()
-        .context("Failed to get list of services with qdbus")?;
-    let out = String::from_utf8(out.stdout)?;
+        .unwrap_or_else(|_| panic!("Failed to get list of services with qdbus"));
+    let out = String::from_utf8(out.stdout).unwrap();
     let matching_lines: Vec<_> = out
         .lines()
         .map(|line| line.trim())
         .filter(|line| line.starts_with(service_base_name))
         .collect();
     if matching_lines.len() > 1 {
-        Err(anyhow!(
+        panic!(
             "Found multiple dbus services that match the service configuration: {}",
             matching_lines.join(", ")
-        ))
+        );
     } else if matching_lines.is_empty() {
-        Err(anyhow!(
+        panic!(
             "Found no matching dbus service for base name: {}",
             service_base_name
-        ))
+        )
     } else {
-        Ok(matching_lines[0].into())
+        matching_lines[0].into()
     }
 }

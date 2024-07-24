@@ -6,8 +6,12 @@ use super::{Service, SoundServer};
 
 #[derive(Parser, Debug, Clone)]
 pub enum Command {
+    /// Begin a new recording.
     Record,
+    /// Cut a previous recording into individual songs.
     Cut,
+    /// Monitor the incoming d-bus messages. Used for
+    /// debugging purposes.
     MonitorDbus,
 }
 

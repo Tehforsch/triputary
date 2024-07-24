@@ -32,6 +32,7 @@ use crate::gui::StriputaryGui;
 
 fn record(opts: &Opts) -> Result<()> {
     info!("Using service: {}", opts.service);
+    info!("Using sound server: {}", opts.sound_server);
     let path = SessionPath(get_new_name(&opts.output_dir));
     let recorder = Recorder::new(&opts, &path)?;
     let _session = recorder.record_new_session()?;
@@ -47,10 +48,17 @@ fn monitor_dbus(opts: &Opts) {
     }
 }
 
+fn run_gui(opts: &Opts) {
+    let app = StriputaryGui::new(opts);
+    let native_options = eframe::NativeOptions::default();
+    eframe::run_native("striputary", native_options, Box::new(|_| Box::new(app)));
+}
+
 fn init_logging(verbosity: usize) {
     let level = match verbosity {
         0 => LevelFilter::Info,
         1 => LevelFilter::Debug,
+        2 => LevelFilter::Trace,
         v => unimplemented!("Unsupported verbosity level: {}", v),
     };
 
@@ -61,12 +69,6 @@ fn init_logging(verbosity: usize) {
         .set_time_offset(UtcOffset::from_whole_seconds(offset.local_minus_utc()).unwrap())
         .build();
     TermLogger::init(level, config, TerminalMode::Mixed, ColorChoice::Auto).unwrap();
-}
-
-fn run_gui(opts: &Opts) {
-    let app = StriputaryGui::new(opts);
-    let native_options = eframe::NativeOptions::default();
-    eframe::run_native("striputary", native_options, Box::new(|_| Box::new(app)));
 }
 
 fn main() -> Result<()> {

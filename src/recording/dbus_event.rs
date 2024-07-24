@@ -17,17 +17,10 @@ pub enum PlaybackStatus {
 }
 
 #[derive(Clone, Debug)]
-pub enum PlayerInformation {
-    CanGoPrevious(bool),
-    CanGoNext(bool),
-}
-
-#[derive(Clone, Debug)]
 pub enum DbusEvent {
     NewSong(Song),
-    NewInvalidSong(Song),
+    NewInvalidSong,
     StatusChanged(PlaybackStatus),
-    PlayerInformation(PlayerInformation),
 }
 
 #[derive(Serialize, Deserialize, Copy, Debug, Clone)]
@@ -59,13 +52,12 @@ impl From<PC> for DbusEvent {
         let properties = &properties.changed_properties;
         get_status_changed(properties)
             .map(|status| DbusEvent::StatusChanged(status))
-            .or(get_player_information(properties).map(|info| DbusEvent::PlayerInformation(info)))
             .unwrap_or_else(|| {
                 let (song, is_valid) = get_song_from_dbus_properties(properties);
                 if is_valid {
                     DbusEvent::NewSong(song)
                 } else {
-                    DbusEvent::NewInvalidSong(song)
+                    DbusEvent::NewInvalidSong
                 }
             })
     }
@@ -83,20 +75,6 @@ fn get_status_changed(properties: &PropMap) -> Option<PlaybackStatus> {
                 None
             }
         }
-    } else {
-        None
-    }
-}
-
-fn get_player_information(properties: &PropMap) -> Option<PlayerInformation> {
-    if properties.contains_key("CanGoPrevious") {
-        Some(PlayerInformation::CanGoPrevious(
-            properties["CanGoPrevious"].as_u64().unwrap() != 0,
-        ))
-    } else if properties.contains_key("CanGoNext") {
-        Some(PlayerInformation::CanGoNext(
-            properties["CanGoNext"].as_u64().unwrap() != 0,
-        ))
     } else {
         None
     }

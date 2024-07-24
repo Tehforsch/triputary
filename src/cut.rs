@@ -7,7 +7,6 @@ use std::process::Command;
 
 use anyhow::Context;
 use anyhow::Result;
-use log::debug;
 use log::info;
 use log::warn;
 use serde::Deserialize;
@@ -17,7 +16,6 @@ use crate::audio_excerpt::AudioExcerpt;
 use crate::audio_time::AudioTime;
 use crate::config::MAX_OFFSET;
 use crate::config::MIN_OFFSET;
-use crate::config::NUM_OFFSETS_TO_TRY;
 use crate::config::READ_BUFFER;
 use crate::config::{self};
 use crate::excerpt_collection::ExcerptCollection;
@@ -76,52 +74,9 @@ fn get_excerpt(buffer_file_name: &Path, cut_time: f64) -> Option<AudioExcerpt> {
     extract_audio(buffer_file_name, listen_start_time, listen_end_time).ok()
 }
 
-fn get_cut_timestamps_from_song_lengths(
-    songs: &[Song],
-    estimated_time_first_song: f64,
-) -> Vec<f64> {
-    songs
-        .iter()
-        .scan(estimated_time_first_song, |acc, song| {
-            let result = Some(*acc);
-            *acc += song.length;
-            result
-        })
-        .collect()
-}
-
-fn determine_cut_offset(audio_excerpts: &[AudioExcerpt], cut_timestamps: &[f64]) -> f64 {
-    // We can assume that some of the songs begin or end with silence.
-    // If that is the case then the offset of the cuts should be chosen by finding an offset that
-    // puts as many of the cuts at positions where the recording is silent. In other words, the offset is given by
-    // the local minimum of the convolution of the volume with a sum of dirac deltas at every cut position.
-    let mut min: Option<(f64, f64)> = None;
-    for i in 0..NUM_OFFSETS_TO_TRY {
-        let offset =
-            (i as f64) / (NUM_OFFSETS_TO_TRY as f64) * (MAX_OFFSET - MIN_OFFSET) + MIN_OFFSET;
-        let total_volume: f64 = cut_timestamps
-            .iter()
-            .zip(audio_excerpts.iter())
-            .map(|(cut_time, audio_excerpt)| audio_excerpt.get_volume_at(cut_time + offset))
-            .sum();
-        if let Some((min_volume, _)) = min {
-            if total_volume < min_volume {
-                min = Some((total_volume, offset));
-            }
-        } else {
-            min = Some((total_volume, offset));
-        };
-    }
-    let cut_quality_estimate = min.unwrap().0 / (audio_excerpts.len() as f64);
-    debug!("Av. volume at cuts: {:.3}", cut_quality_estimate);
-    min.unwrap().1
-}
-
 pub fn get_excerpt_collection(session: RecordingSessionWithPath) -> ExcerptCollection {
     let (excerpts, songs) = get_all_valid_excerpts_and_songs(&session);
-    let timestamps =
-        get_cut_timestamps_from_song_lengths(&songs, session.estimated_time_first_song_secs());
-    let offset_guess = determine_cut_offset(&excerpts, &timestamps);
+    let offset_guess = 0.0;
     let excerpts: Vec<NamedExcerpt> = excerpts
         .into_iter()
         .enumerate()

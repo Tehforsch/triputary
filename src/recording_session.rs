@@ -27,18 +27,16 @@ impl RecordingSession {
                 .iter()
                 .filter_map(|event| match &event.event {
                     DbusEvent::NewSong(song) => Some(song.clone()),
-                    DbusEvent::NewInvalidSong(_) => None,
+                    DbusEvent::NewInvalidSong => None,
                     DbusEvent::StatusChanged(_) => None,
-                    DbusEvent::PlayerInformation(_) => None,
                 })
                 .collect(),
             timestamps: events
                 .iter()
                 .filter_map(|event| match &event.event {
                     DbusEvent::NewSong(_) => Some(event.timestamp),
-                    DbusEvent::NewInvalidSong(_) => None,
+                    DbusEvent::NewInvalidSong => None,
                     DbusEvent::StatusChanged(_) => Some(event.timestamp),
-                    DbusEvent::PlayerInformation(_) => None,
                 })
                 .collect(),
         }

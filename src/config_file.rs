@@ -35,7 +35,8 @@ impl ConfigFile {
         let mut config_file: ConfigFile = serde_yaml::from_str(&data)
             .context("Reading config file contents")
             .unwrap();
-        config_file.output_dir = expanduser(&config_file.output_dir).expect("Failed to find output dir.");
+        config_file.output_dir =
+            expanduser(&config_file.output_dir).expect("Failed to find output dir.");
         Ok(config_file)
     }
 }

@@ -2,9 +2,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
-use crate::recording::SoundServer;
-
-use super::Service;
+use super::{Service, SoundServer};
 
 #[derive(Parser, Debug, Clone)]
 pub enum Command {

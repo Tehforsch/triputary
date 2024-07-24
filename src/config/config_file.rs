@@ -9,9 +9,8 @@ use serde::Deserialize;
 
 use crate::consts;
 
-use crate::recording::SoundServer;
-
 use super::Service;
+use super::SoundServer;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ConfigFile {

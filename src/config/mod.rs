@@ -1,14 +1,15 @@
 mod cli;
 mod config_file;
 mod service;
+mod sound_server;
 
 use self::{cli::CliOpts, config_file::ConfigFile};
-use crate::recording::SoundServer;
 use clap::Parser;
 use log::{error, info};
 use std::path::PathBuf;
 
 pub use self::service::Service;
+pub use self::sound_server::SoundServer;
 pub use cli::Command;
 
 #[derive(Clone)]

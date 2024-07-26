@@ -4,8 +4,6 @@ use eframe::egui::*;
 use super::config::CUT_MARKER_COLOR;
 use super::config::CUT_MARKER_WIDTH;
 use super::config::{self};
-use crate::audio_time::AudioTime;
-use crate::excerpt_collection::NamedExcerpt;
 use crate::song::Song;
 
 pub struct ExcerptPlot {

@@ -1,27 +1,18 @@
 use std::fmt::Display;
 use std::fs::create_dir_all;
-use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
 use anyhow::Context;
 use anyhow::Result;
 use log::info;
-use log::warn;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::audio_excerpt::AudioExcerpt;
-use crate::audio_time::AudioTime;
-use crate::consts::MAX_OFFSET;
-use crate::consts::MIN_OFFSET;
-use crate::consts::READ_BUFFER;
+use super::time::AudioTime;
 use crate::consts::{self};
-use crate::excerpt_collection::ExcerptCollection;
-use crate::excerpt_collection::NamedExcerpt;
 use crate::recording_session::RecordingSessionWithPath;
 use crate::song::Song;
-use crate::wav::extract_audio;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Cut {
@@ -34,13 +25,13 @@ pub struct Cut {
 pub struct CutInfo {
     buffer_file: PathBuf,
     music_dir: PathBuf,
-    pub cut: Cut,
+    cut: Cut,
 }
 
 impl CutInfo {
     pub fn new(
         session: &RecordingSessionWithPath,
-        song: Song,
+        song: &Song,
         start_time: AudioTime,
         end_time: AudioTime,
     ) -> Self {
@@ -51,64 +42,11 @@ impl CutInfo {
             music_dir,
             cut: Cut {
                 start_time_secs: start_time.time,
-                song,
+                song: song.clone(),
                 end_time_secs: end_time.time,
             },
         }
     }
-}
-
-fn get_excerpt(buffer_file_name: &Path, cut_time: f64) -> Option<AudioExcerpt> {
-    let listen_start_time = (cut_time + MIN_OFFSET - READ_BUFFER).max(0.0);
-    let listen_end_time = cut_time + MAX_OFFSET + READ_BUFFER;
-    extract_audio(buffer_file_name, listen_start_time, listen_end_time).ok()
-}
-
-pub fn get_excerpt_collection(session: RecordingSessionWithPath) -> ExcerptCollection {
-    let (excerpts, songs) = get_all_valid_excerpts_and_songs(&session);
-    let offset_guess = 0.0;
-    let excerpts: Vec<NamedExcerpt> = excerpts
-        .into_iter()
-        .enumerate()
-        .map(|(num, excerpt)| {
-            let song_before = if num == 0 { None } else { songs.get(num) };
-            NamedExcerpt {
-                excerpt,
-                song_before: song_before.cloned(),
-                song_after: songs.get(num).cloned(),
-                num,
-            }
-        })
-        .collect();
-    ExcerptCollection {
-        session,
-        excerpts,
-        offset_guess,
-    }
-}
-
-fn get_all_valid_excerpts_and_songs(
-    session: &RecordingSessionWithPath,
-) -> (Vec<AudioExcerpt>, Vec<Song>) {
-    let mut audio_excerpts = Vec::new();
-    let mut valid_songs = Vec::new();
-    let mut cut_time = session.estimated_time_first_song_secs();
-    for song in session.session.songs.iter() {
-        let audio_excerpt = get_excerpt(&session.path.get_buffer_file(), cut_time);
-        if let Some(excerpt) = audio_excerpt {
-            audio_excerpts.push(excerpt);
-            valid_songs.push(song.clone());
-        } else {
-            warn!("Could not extract audio for song: {}. Stopping", song);
-            break;
-        }
-        cut_time += song.length;
-    }
-    let audio_excerpt_after_last_song = get_excerpt(&session.path.get_buffer_file(), cut_time);
-    if let Some(audio_excerpt_after_last_song) = audio_excerpt_after_last_song {
-        audio_excerpts.push(audio_excerpt_after_last_song);
-    }
-    (audio_excerpts, valid_songs)
 }
 
 fn add_metadata_arg_if_present<T: Display>(

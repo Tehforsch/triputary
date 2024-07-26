@@ -5,6 +5,7 @@ use std::vec::Vec;
 
 use anyhow::Context;
 use anyhow::Result;
+use chrono::Local;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -81,14 +82,15 @@ pub struct RecordingSessionWithPath {
 }
 
 impl RecordingSessionWithPath {
-    pub(crate) fn estimated_time_first_song_secs(&self) -> f64 {
-        self.session.timestamps[0].in_secs()
-    }
-
     pub fn load_from_dir(path: &Path) -> Result<Self> {
         Ok(Self {
             session: RecordingSession::from_file(&path.join(consts::DEFAULT_SESSION_FILE))?,
             path: SessionPath(path.to_owned()),
         })
     }
+}
+
+pub fn get_new_name(output_dir: &Path) -> PathBuf {
+    let date_string = Local::now().format("%Y-%m-%d-%H-%M-%S").to_string();
+    output_dir.join(date_string)
 }

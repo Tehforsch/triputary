@@ -22,10 +22,7 @@ use self::cutting_thread::CuttingThreadHandle;
 use self::playback::play_excerpt;
 use self::playback::PlaybackThreadHandle;
 use self::plot::ExcerptPlot;
-use crate::audio_time::AudioTime;
 use crate::config::Config;
-use crate::cut::CutInfo;
-use crate::excerpt_collection::ExcerptCollection;
 use crate::gui::session_manager::SessionIdentifier;
 use crate::gui::session_manager::SessionManager;
 use crate::song::format_title;
@@ -37,7 +34,6 @@ struct SongIdentifier {
 }
 
 pub struct StriputaryGui {
-    collection: Option<ExcerptCollection>,
     plots: Vec<ExcerptPlot>,
     scroll_position: usize,
     cut_thread: CuttingThreadHandle,

@@ -5,8 +5,6 @@ use std::thread::JoinHandle;
 use std::thread::{self};
 
 use crate::consts;
-use crate::cut::cut_song;
-use crate::cut::CutInfo;
 use crate::data_stream::DataStream;
 use crate::song::Song;
 

@@ -1,21 +1,20 @@
-mod audio_excerpt;
-mod audio_time;
+mod audio;
 mod config;
 mod consts;
-mod cut;
 mod data_stream;
 mod errors;
-mod excerpt_collection;
-mod gui;
+// mod gui;
 mod recording;
 mod recording_session;
 mod song;
-mod wav;
+
+use std::path::Path;
 
 use anyhow::Result;
+use audio::Cutter;
+use audio::DbusStrategy;
 use config::Command;
 use config::Config;
-use gui::session_manager::get_new_name;
 use log::info;
 use log::LevelFilter;
 use recording::dbus::DbusConnection;
@@ -28,7 +27,9 @@ use simplelog::TermLogger;
 use simplelog::TerminalMode;
 use time::UtcOffset;
 
-use crate::gui::StriputaryGui;
+use crate::recording_session::get_new_name;
+
+// use crate::gui::StriputaryGui;
 
 fn record(config: &Config) -> Result<()> {
     info!("Using service: {}", config.service);
@@ -48,10 +49,14 @@ fn monitor_dbus(config: &Config) {
     }
 }
 
-fn run_gui(config: &Config) {
-    let app = StriputaryGui::new(config);
-    let native_options = eframe::NativeOptions::default();
-    eframe::run_native("striputary", native_options, Box::new(|_| Box::new(app)));
+// fn run_gui(config: &Config) {
+//     let app = StriputaryGui::new(config);
+//     let native_options = eframe::NativeOptions::default();
+//     eframe::run_native("striputary", native_options, Box::new(|_| Box::new(app)));
+// }
+
+fn cut(config: &Config, session_path: &Path) {
+    Cutter::new(config, session_path).cut(DbusStrategy);
 }
 
 fn init_logging(verbosity: usize) {
@@ -76,7 +81,7 @@ fn main() -> Result<()> {
     init_logging(config.verbosity);
     match config.command {
         Command::Record => record(&config)?,
-        Command::Cut => run_gui(&config),
+        Command::Cut(ref args) => cut(&config, &args.path),
         Command::MonitorDbus => monitor_dbus(&config),
     }
     Ok(())

@@ -4,7 +4,7 @@ use crate::{config::Config, recording_session::RecordingSessionWithPath};
 
 use super::{
     buffer::Buffer,
-    cut::{cut_song, CutInfo},
+    cut::{cut_multiple_songs, CutInfo},
     cutting_strategy::CuttingStrategy,
 };
 
@@ -33,8 +33,6 @@ impl Cutter {
 
     pub fn cut(&self, s: impl CuttingStrategy) {
         let cuts = self.get_cuts(s);
-        for cut in cuts {
-            cut_song(&cut).unwrap();
-        }
+        cut_multiple_songs(cuts).unwrap();
     }
 }

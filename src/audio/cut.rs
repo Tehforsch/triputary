@@ -2,6 +2,7 @@ use std::fmt::Display;
 use std::fs::create_dir_all;
 use std::path::PathBuf;
 use std::process::Command;
+use std::process::Stdio;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -59,7 +60,7 @@ fn add_metadata_arg_if_present<T: Display>(
     }
 }
 
-pub fn cut_song(info: &CutInfo) -> Result<()> {
+fn get_cut_command(info: &CutInfo) -> Result<Command> {
     let difference = info.cut.end_time_secs - info.cut.start_time_secs;
     let target_file = info.cut.song.get_target_file(&info.music_dir);
     create_dir_all(target_file.parent().unwrap())
@@ -108,16 +109,47 @@ pub fn cut_song(info: &CutInfo) -> Result<()> {
         |track_number| format!("track={}", track_number),
         info.cut.song.track_number.as_ref(),
     );
-    let out = command
+    command
         .arg("-y")
         .arg(target_file.to_str().unwrap())
-        .output();
-    out.map(|_| ()).context(format!(
-        "Failed to cut song: {:?} {:?} {:?} ({:?}+{:?}) (is ffmpeg installed?)",
-        &info.cut.song.title,
-        &info.cut.song.album,
-        &info.cut.song.artist,
-        info.cut.start_time_secs,
-        difference,
-    ))
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    Ok(command)
+}
+
+pub fn cut_multiple_songs(mut cuts: Vec<CutInfo>) -> Result<()> {
+    const MAX_NUM_PROCESSES: usize = 10;
+    let mut handles = vec![];
+    let pop = |cuts: &mut Vec<CutInfo>| {
+        if cuts.is_empty() {
+            None
+        } else {
+            Some(cuts.remove(0))
+        }
+    };
+    while !handles.is_empty() || !cuts.is_empty() {
+        if handles.len() < MAX_NUM_PROCESSES {
+            if let Some(cut) = pop(&mut cuts) {
+                let mut command = get_cut_command(&cut)?;
+                handles.push(command.spawn().expect("Failed to cut song."));
+            }
+        }
+        let mut finished: Vec<_> = handles
+            .iter_mut()
+            .map(|handle| match handle.try_wait().unwrap() {
+                Some(status) => {
+                    if status.success() {
+                        true
+                    } else {
+                        panic!("Cut process failed with {}", status);
+                    }
+                }
+                None => false,
+            })
+            .collect();
+        let (_, still_running): (Vec<_>, Vec<_>) =
+            handles.into_iter().partition(|_| finished.remove(0));
+        handles = still_running;
+    }
+    Ok(())
 }

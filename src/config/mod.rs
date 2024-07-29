@@ -18,7 +18,7 @@ pub struct Config {
     pub service: Service,
     pub sound_server: SoundServer,
     pub command: Command,
-    pub verbosity: usize,
+    pub verbosity: u8,
 }
 
 impl Config {

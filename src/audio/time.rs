@@ -22,6 +22,18 @@ impl AudioTime {
                 as u32,
         }
     }
+
+    pub fn from_sample_and_spec(interleaved_sample_num: u32, spec: WavSpec) -> AudioTime {
+        let time =
+            (interleaved_sample_num as f64) / (spec.channels as u32 * spec.sample_rate) as f64;
+        AudioTime {
+            time,
+            channels: spec.channels,
+            sample_rate: spec.sample_rate,
+            interleaved_sample_num,
+        }
+    }
+
     pub fn from_time_same_spec(time: f64, audiotime: AudioTime) -> AudioTime {
         AudioTime {
             time,

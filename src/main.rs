@@ -2,7 +2,6 @@ mod audio;
 mod config;
 mod consts;
 mod data_stream;
-mod errors;
 // mod gui;
 mod recording;
 mod recording_session;
@@ -12,7 +11,7 @@ use std::path::Path;
 
 use anyhow::Result;
 use audio::Cutter;
-use audio::DbusStrategy;
+use audio::SilenceOptimizer;
 use config::Command;
 use config::Config;
 use log::info;
@@ -56,7 +55,7 @@ fn monitor_dbus(config: &Config) {
 // }
 
 fn cut(config: &Config, session_path: &Path) {
-    Cutter::new(config, session_path).cut(DbusStrategy);
+    Cutter::new(config, session_path).cut(SilenceOptimizer);
 }
 
 fn init_logging(verbosity: usize) {
@@ -78,7 +77,7 @@ fn init_logging(verbosity: usize) {
 
 fn main() -> Result<()> {
     let config = Config::from_config_and_cli();
-    init_logging(config.verbosity);
+    init_logging(config.verbosity as usize);
     match config.command {
         Command::Record => record(&config)?,
         Command::Cut(ref args) => cut(&config, &args.path),

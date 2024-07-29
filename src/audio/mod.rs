@@ -6,4 +6,4 @@ mod time;
 
 pub use cutter::Cutter;
 
-pub use cutting_strategy::DbusStrategy;
+pub use cutting_strategy::*;

@@ -57,21 +57,6 @@ impl SessionManager {
             .map(|index| SessionPath(self.dirs[index.0].clone()))
     }
 
-    pub fn get_currently_selected_collection(&self) -> Option<ExcerptCollection> {
-        let session_dir = self.get_currently_selected()?.0;
-        if session_dir.is_dir() {
-            RecordingSessionWithPath::load_from_dir(&session_dir)
-                .map(get_excerpt_collection)
-                .map_err(|x| {
-                    error!("{}", x);
-                    x
-                })
-                .ok()
-        } else {
-            None
-        }
-    }
-
     pub fn iter_relative_paths_with_indices(
         &self,
     ) -> impl Iterator<Item = (SessionIdentifier, String)> + '_ {

@@ -1,17 +1,29 @@
 use log::debug;
 
-use crate::{audio::buffer::OutOfBoundsError, recording_session::RecordingSession, song::Song};
+use crate::{
+    audio::buffer::{get_volume_at, OutOfBoundsError},
+    recording_session::RecordingSession,
+    song::Song,
+};
 
-use super::{buffer::Buffer, time::AudioTime};
+use super::{buffer::WavFileReader, time::AudioTime};
 
 pub trait CuttingStrategy {
-    fn get_timestamps(&self, buffer: &mut Buffer, session: &RecordingSession) -> Vec<AudioTime>;
+    fn get_timestamps(
+        &self,
+        buffer: &mut WavFileReader,
+        session: &RecordingSession,
+    ) -> Vec<AudioTime>;
 }
 
 pub struct DbusStrategy;
 
 impl CuttingStrategy for DbusStrategy {
-    fn get_timestamps(&self, buffer: &mut Buffer, session: &RecordingSession) -> Vec<AudioTime> {
+    fn get_timestamps(
+        &self,
+        buffer: &mut WavFileReader,
+        session: &RecordingSession,
+    ) -> Vec<AudioTime> {
         let spec = buffer.spec();
         session
             .timestamps
@@ -38,7 +50,11 @@ fn get_cut_timestamps_from_song_lengths(
 pub struct DbusLengthsStrategy;
 
 impl CuttingStrategy for DbusLengthsStrategy {
-    fn get_timestamps(&self, buffer: &mut Buffer, session: &RecordingSession) -> Vec<AudioTime> {
+    fn get_timestamps(
+        &self,
+        buffer: &mut WavFileReader,
+        session: &RecordingSession,
+    ) -> Vec<AudioTime> {
         let spec = buffer.spec();
         let first_timestamp = &session.timestamps[0];
         get_cut_timestamps_from_song_lengths(&session.songs, first_timestamp.in_secs())
@@ -50,14 +66,18 @@ impl CuttingStrategy for DbusLengthsStrategy {
 pub struct SilenceOptimizer;
 
 impl CuttingStrategy for SilenceOptimizer {
-    fn get_timestamps(&self, buffer: &mut Buffer, session: &RecordingSession) -> Vec<AudioTime> {
+    fn get_timestamps(
+        &self,
+        buffer: &mut WavFileReader,
+        session: &RecordingSession,
+    ) -> Vec<AudioTime> {
         let guesses = DbusLengthsStrategy::get_timestamps(&DbusLengthsStrategy, buffer, session);
         let offset = optimize_cut_offset(buffer, &guesses);
         guesses.into_iter().map(|time| time + offset).collect()
     }
 }
 
-fn optimize_cut_offset(buffer: &mut Buffer, guesses: &[AudioTime]) -> AudioTime {
+fn optimize_cut_offset(buffer: &mut WavFileReader, guesses: &[AudioTime]) -> AudioTime {
     // We can assume that some of the songs begin or end with silence.
     // If that is the case then the offset of the cuts should be chosen by finding an offset that
     // puts as many of the cuts at positions where the recording is silent. In other words, the offset is given by
@@ -71,7 +91,7 @@ fn optimize_cut_offset(buffer: &mut Buffer, guesses: &[AudioTime]) -> AudioTime 
     for offset in offsets.into_iter() {
         let total_volume: Result<f64, OutOfBoundsError> = guesses
             .iter()
-            .map(|time| buffer.get_volume_at(*time + offset))
+            .map(|time| get_volume_at(buffer, *time + offset))
             .sum();
         if let Ok(total_volume) = total_volume {
             if let Some((min_volume, _)) = min {

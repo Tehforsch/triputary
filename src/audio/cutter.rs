@@ -5,26 +5,26 @@ use log::{error, warn};
 use crate::{config::Config, recording_session::RecordingSessionWithPath};
 
 use super::{
-    buffer::Buffer,
+    buffer::{get_volume_at, WavFileReader},
     cut::{cut_multiple_songs, CutInfo},
     cutting_strategy::CuttingStrategy,
     time::AudioTime,
 };
 
 pub struct Cutter {
-    buffer: Buffer,
+    reader: WavFileReader,
     session: RecordingSessionWithPath,
 }
 
 impl Cutter {
     pub fn new(_: &Config, path: &Path) -> Self {
         let session = RecordingSessionWithPath::load_from_dir(path).unwrap();
-        let buffer = Buffer::new(session.path.get_buffer_file());
-        Self { buffer, session }
+        let reader = hound::WavReader::open(session.path.get_buffer_file()).unwrap();
+        Self { reader, session }
     }
 
     fn get_cuts(&mut self, s: impl CuttingStrategy) -> Vec<CutInfo> {
-        let timestamps = s.get_timestamps(&mut self.buffer, &self.session.session);
+        let timestamps = s.get_timestamps(&mut self.reader, &self.session.session);
         assert_eq!(timestamps.len(), self.session.session.songs.len() + 1);
         timestamps
             .iter()
@@ -48,12 +48,8 @@ impl Cutter {
             .iter()
             .enumerate()
             .take_while(|(_, timestamp)| {
-                self.buffer
-                    .get_volume_at(AudioTime::from_time_and_spec(
-                        timestamp.in_secs(),
-                        self.buffer.spec(),
-                    ))
-                    .is_ok()
+                let time = AudioTime::from_time_and_spec(timestamp.in_secs(), self.reader.spec());
+                get_volume_at(&mut self.reader, time).is_ok()
             })
             .map(|(index, _)| index)
             .last();

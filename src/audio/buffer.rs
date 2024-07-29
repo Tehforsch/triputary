@@ -1,11 +1,21 @@
 use std::{fs::File, io::BufReader, path::PathBuf};
 
-use hound::WavReader;
+use hound::{WavReader, WavSpec};
 
 use super::time::AudioTime;
 
-pub struct Buffer {
-    reader: WavReader<BufReader<File>>,
+pub type WavFileReader = WavReader<BufReader<File>>;
+
+pub trait SampleReader {
+    fn extract_audio(
+        &mut self,
+        start: AudioTime,
+        end: AudioTime,
+    ) -> Result<Vec<i16>, OutOfBoundsError>;
+
+    fn start(&self) -> AudioTime;
+    fn end(&self) -> AudioTime;
+    fn spec(&self) -> WavSpec;
 }
 
 #[derive(Debug)]
@@ -17,25 +27,31 @@ impl From<std::io::Error> for OutOfBoundsError {
     }
 }
 
-impl Buffer {
-    pub fn new(buffer_file: PathBuf) -> Buffer {
-        let reader = hound::WavReader::open(buffer_file).unwrap();
-        Self { reader }
-    }
+pub fn get_volume_at<R: SampleReader>(r: &mut R, time: AudioTime) -> Result<f64, OutOfBoundsError> {
+    pub static NUM_SAMPLES_PER_AVERAGE_VOLUME: usize = 4000;
+    let start = time
+        - AudioTime::from_sample_and_spec((NUM_SAMPLES_PER_AVERAGE_VOLUME / 2) as u32, r.spec());
+    let end = time
+        + AudioTime::from_sample_and_spec((NUM_SAMPLES_PER_AVERAGE_VOLUME / 2) as u32, r.spec());
+    let inv_len = 1.0 / ((end.interleaved_sample_num - start.interleaved_sample_num) as f64);
+    let inv_i16 = 1.0 / (i16::MAX as f64);
+    let samples = r.extract_audio(start, end)?;
+    let average: f64 = samples
+        .iter()
+        .map(|x| (*x as f64).abs() * inv_len * inv_i16)
+        .sum::<f64>();
+    Ok(average)
+}
 
-    pub fn spec(&self) -> hound::WavSpec {
-        self.reader.spec()
-    }
-
+impl SampleReader for WavReader<BufReader<File>> {
     fn extract_audio(
         &mut self,
         start: AudioTime,
         end: AudioTime,
     ) -> Result<Vec<i16>, OutOfBoundsError> {
         let num_samples = (end - start).interleaved_sample_num;
-        self.reader.seek(start.frame_num())?;
+        self.seek(start.frame_num())?;
         let samples_interleaved: Vec<i16> = self
-            .reader
             .samples::<i16>()
             .take(num_samples as usize)
             .collect::<Result<Vec<_>, hound::Error>>()
@@ -47,25 +63,15 @@ impl Buffer {
         }
     }
 
-    pub fn get_volume_at(&mut self, time: AudioTime) -> Result<f64, OutOfBoundsError> {
-        pub static NUM_SAMPLES_PER_AVERAGE_VOLUME: usize = 4000;
-        let start = time
-            - AudioTime::from_sample_and_spec(
-                (NUM_SAMPLES_PER_AVERAGE_VOLUME / 2) as u32,
-                self.spec(),
-            );
-        let end = time
-            + AudioTime::from_sample_and_spec(
-                (NUM_SAMPLES_PER_AVERAGE_VOLUME / 2) as u32,
-                self.spec(),
-            );
-        let inv_len = 1.0 / ((end.interleaved_sample_num - start.interleaved_sample_num) as f64);
-        let inv_i16 = 1.0 / (i16::MAX as f64);
-        let samples = self.extract_audio(start, end)?;
-        let average: f64 = samples
-            .iter()
-            .map(|x| (*x as f64).abs() * inv_len * inv_i16)
-            .sum::<f64>();
-        Ok(average)
+    fn start(&self) -> AudioTime {
+        AudioTime::from_time_and_spec(0.0, self.spec())
+    }
+
+    fn end(&self) -> AudioTime {
+        AudioTime::from_sample_and_spec(self.len(), self.spec())
+    }
+
+    fn spec(&self) -> WavSpec {
+        self.spec()
     }
 }

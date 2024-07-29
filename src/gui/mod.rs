@@ -22,63 +22,46 @@ use self::cutting_thread::CuttingThreadHandle;
 use self::playback::play_excerpt;
 use self::playback::PlaybackThreadHandle;
 use self::plot::ExcerptPlot;
+use crate::audio::AudioTime;
+use crate::audio::Cutter;
 use crate::config::Config;
 use crate::gui::session_manager::SessionIdentifier;
 use crate::gui::session_manager::SessionManager;
+use crate::recording_session::RecordingSession;
 use crate::song::format_title;
 use crate::song::Song;
+
+fn add_large_button(ui: &mut Ui, name: &str) -> Response {
+    ui.add_sized(
+        Vec2::new(config::CUT_BUTTON_SIZE_X, config::CUT_BUTTON_SIZE_Y),
+        Button::new(RichText::new(name).text_style(TextStyle::Heading)),
+    )
+}
+
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 struct SongIdentifier {
     song_index: usize,
 }
 
-pub struct StriputaryGui {
+pub struct SessionGui {
+    session: RecordingSession,
     plots: Vec<ExcerptPlot>,
     scroll_position: usize,
     cut_thread: CuttingThreadHandle,
     current_playback: Option<(SongIdentifier, PlaybackThreadHandle)>,
     last_touched_song: Option<SongIdentifier>,
-    should_repaint: bool,
-    session_manager: SessionManager,
 }
 
-impl StriputaryGui {
-    pub fn new(config: &Config) -> Self {
-        let session_manager = SessionManager::new(&config.output_dir);
-        let mut gui = Self {
-            collection: None,
-            plots: vec![],
-            scroll_position: 0,
-            cut_thread: CuttingThreadHandle::default(),
-            current_playback: None,
-            last_touched_song: None,
-            should_repaint: false,
-            session_manager,
-        };
-        gui.load_selected_session();
-        gui
-    }
+pub struct StriputaryGui {
+    session_manager: SessionManager,
+    gui: Option<SessionGui>,
+    should_repaint: bool,
+}
 
+impl SessionGui {
     fn cut_songs(&self) {
-        if let Some(ref collection) = self.collection {
-            let cut_info = self.get_cut_info(collection);
-            self.cut_thread.send_cut_infos(cut_info);
-        }
-    }
-
-    fn get_cut_info(&self, collection: &ExcerptCollection) -> Vec<CutInfo> {
-        let mut cut_info: Vec<CutInfo> = vec![];
-        for (plot_start, plot_end) in self.plots.iter().zip(self.plots[1..].iter()) {
-            let song = plot_start.excerpt.song_after.as_ref().unwrap();
-            cut_info.push(CutInfo::new(
-                &collection.session,
-                song.clone(),
-                plot_start.cut_time,
-                plot_end.cut_time,
-            ));
-        }
-        cut_info
+        todo!()
     }
 
     fn mark_cut_songs(&mut self) {
@@ -91,82 +74,25 @@ impl StriputaryGui {
     }
 
     fn play_last_touched_song(&mut self) {
-        if let Some(last_touched) = self.last_touched_song {
-            let plot = &self.plots[last_touched.song_index];
-            let excerpt = &plot.excerpt.excerpt;
-            if let Some((_, ref thread)) = self.current_playback {
-                thread.shut_down();
-            }
-            self.current_playback = Some((
-                last_touched,
-                play_excerpt(excerpt, excerpt.get_relative_time(plot.cut_time)),
-            ));
-        }
-    }
-
-    fn select_session(&mut self, identifier: SessionIdentifier) {
-        self.session_manager.select(identifier);
-        self.load_selected_session();
-    }
-
-    fn load_selected_session(&mut self) {
-        self.collection = self.session_manager.get_currently_selected_collection();
-        if let Some(ref collection) = self.collection {
-            self.plots = self.get_plots(collection);
-        }
+        todo!()
+        // if let Some(last_touched) = self.last_touched_song {
+        //     let plot = &self.plots[last_touched.song_index];
+        //     let excerpt = &plot.excerpt.excerpt;
+        //     if let Some((_, ref thread)) = self.current_playback {
+        //         thread.shut_down();
+        //     }
+        //     self.current_playback = Some((
+        //         last_touched,
+        //         play_excerpt(excerpt, excerpt.get_relative_time(plot.cut_time)),
+        //     ));
+        // }
     }
 
     fn scroll(&mut self, diff: i32) {
-        let num_plots = self
-            .collection
-            .as_ref()
-            .map(|collection| collection.excerpts.len())
-            .unwrap_or(0);
+        let num_plots = self.session.songs.len();
         self.scroll_position = (self.scroll_position as i32 + diff)
             .min(num_plots as i32 - config::MIN_NUM_PLOTS_SHOWN)
             .max(0) as usize;
-    }
-
-    fn add_large_button(&self, ui: &mut Ui, name: &str) -> Response {
-        ui.add_sized(
-            Vec2::new(config::CUT_BUTTON_SIZE_X, config::CUT_BUTTON_SIZE_Y),
-            Button::new(RichText::new(name).text_style(TextStyle::Heading)),
-        )
-    }
-
-    fn add_side_panel(&mut self, ctx: &egui::Context) {
-        egui::SidePanel::left("side_bar")
-            .resizable(false)
-            .min_width(config::MIN_SIDE_BAR_WIDTH)
-            .show(ctx, |ui| {
-                let cut_button = self.add_large_button(ui, "Cut all songs");
-                if cut_button.clicked() || ctx.input().key_pressed(config::CUT_KEY) {
-                    self.cut_songs();
-                }
-                self.add_dir_selection_bar(ui);
-            });
-    }
-
-    fn add_dir_selection_bar(&mut self, ui: &mut Ui) {
-        ui.add(Label::new(
-            RichText::new("Previous sessions:").text_style(TextStyle::Heading),
-        ));
-        let dirs_with_indices: Vec<_> = self
-            .session_manager
-            .iter_relative_paths_with_indices()
-            .collect();
-        for (i, dir_name) in dirs_with_indices.iter() {
-            let mut button_text = RichText::new(dir_name).text_style(TextStyle::Heading);
-            let button = if self.session_manager.is_currently_selected(i) {
-                button_text = button_text.color(config::SELECTED_TEXT_COLOR);
-                Button::new(button_text).fill(config::SELECTED_FILL_COLOR)
-            } else {
-                Button::new(button_text)
-            };
-            if ui.add(button).clicked() {
-                self.select_session(*i);
-            }
-        }
     }
 
     fn enumerate_visible_plots(
@@ -184,7 +110,7 @@ impl StriputaryGui {
 
     fn move_all_markers_after(&mut self, clicked_song: SongIdentifier, offset: AudioTime) {
         for plot in self.plots.iter_mut() {
-            if plot.excerpt.num >= clicked_song.song_index {
+            if plot.num >= clicked_song.song_index {
                 plot.move_marker_to_offset(offset);
             }
         }
@@ -194,13 +120,13 @@ impl StriputaryGui {
         ui.horizontal(|ui| {
             add_plot_label(
                 ui,
-                plot.excerpt.song_before.as_ref(),
+                plot.song_before.as_ref(),
                 plot.finished_cutting_song_before,
             );
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 add_plot_label(
                     ui,
-                    plot.excerpt.song_after.as_ref(),
+                    plot.song_after.as_ref(),
                     plot.finished_cutting_song_after,
                 );
             });
@@ -270,20 +196,83 @@ impl StriputaryGui {
         }
     }
 
-    fn get_plots(&self, collection: &ExcerptCollection) -> Vec<ExcerptPlot> {
-        collection
-            .excerpts
-            .iter()
-            .map(|excerpt| {
-                ExcerptPlot::new(
-                    excerpt.clone(),
-                    excerpt
-                        .excerpt
-                        .get_absolute_time_from_time_offset(collection.offset_guess),
-                )
-            })
-            .collect()
+    fn get_plots(&self) -> Vec<ExcerptPlot> {
+        todo!()
+    //     collection
+    //         .excerpts
+    //         .iter()
+    //         .map(|excerpt| {
+    //             ExcerptPlot::new(
+    //                 excerpt.clone(),
+    //                 excerpt
+    //                     .excerpt
+    //                     .get_absolute_time_from_time_offset(collection.offset_guess),
+    //             )
+    //         })
+    //         .collect()
     }
+}
+
+
+impl StriputaryGui {
+    pub fn new(config: &Config) -> Self {
+        let session_manager = SessionManager::new(&config.output_dir);
+        let mut gui = Self {
+            gui: None,
+            should_repaint: false,
+            session_manager,
+        };
+        gui.load_selected_session();
+        gui
+    }
+
+    fn select_session(&mut self, identifier: SessionIdentifier) {
+        self.session_manager.select(identifier);
+        self.load_selected_session();
+    }
+
+    fn load_selected_session(&mut self) {
+        self.collection = self.session_manager.get_currently_selected_collection();
+        if let Some(ref collection) = self.collection {
+            self.plots = self.get_plots(collection);
+        }
+    }
+
+    fn add_side_panel(&mut self, ctx: &egui::Context) {
+        egui::SidePanel::left("side_bar")
+            .resizable(false)
+            .min_width(config::MIN_SIDE_BAR_WIDTH)
+            .show(ctx, |ui| {
+                let cut_button = add_large_button(ui, "Cut all songs");
+                if cut_button.clicked() || ctx.input().key_pressed(config::CUT_KEY) {
+                    self.cut_songs();
+                }
+                self.add_dir_selection_bar(ui);
+            });
+    }
+
+    fn add_dir_selection_bar(&mut self, ui: &mut Ui) {
+        ui.add(Label::new(
+            RichText::new("Previous sessions:").text_style(TextStyle::Heading),
+        ));
+        let dirs_with_indices: Vec<_> = self
+            .session_manager
+            .iter_relative_paths_with_indices()
+            .collect();
+        for (i, dir_name) in dirs_with_indices.iter() {
+            let mut button_text = RichText::new(dir_name).text_style(TextStyle::Heading);
+            let button = if self.session_manager.is_currently_selected(i) {
+                button_text = button_text.color(config::SELECTED_TEXT_COLOR);
+                Button::new(button_text).fill(config::SELECTED_FILL_COLOR)
+            } else {
+                Button::new(button_text)
+            };
+            if ui.add(button).clicked() {
+                self.select_session(*i);
+            }
+        }
+    }
+
 }
 
 impl App for StriputaryGui {

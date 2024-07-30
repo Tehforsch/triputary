@@ -9,6 +9,9 @@ use rodio::Sink;
 
 use crate::audio::AudioTime;
 
+use super::excerpt::AudioExcerptSource;
+use super::Excerpt;
+
 pub struct PlaybackThreadHandle {
     shutdown_sender: Sender<ShutdownSignal>,
     start_system_time: SystemTime,
@@ -34,21 +37,22 @@ impl PlaybackThreadHandle {
 
 pub struct ShutdownSignal;
 
-pub fn play_excerpt(start_time: AudioTime) -> PlaybackThreadHandle {
-    // let cloned = excerpt.clone();
-    // let (shutdown_sender, shutdown_receiver) = channel();
-    // thread::spawn(move || {
-    //     let source = AudioExcerptSource::new(cloned, start_time);
-    //     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-    //     let sink = Sink::try_new(&stream_handle).unwrap();
-    //     sink.append(source);
-    //     sink.play();
-    //     if shutdown_receiver.recv().is_ok() {}
-    // });
-    // PlaybackThreadHandle {
-    //     shutdown_sender,
-    //     start_system_time: SystemTime::now(),
-    //     start_audio_time: start_time,
-    // }
-    todo!();
+impl Excerpt {
+    pub fn play(&self, start_time: AudioTime) -> PlaybackThreadHandle {
+        let cloned = self.clone();
+        let (shutdown_sender, shutdown_receiver) = channel();
+        thread::spawn(move || {
+            let source = AudioExcerptSource::new(cloned, start_time);
+            let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+            let sink = Sink::try_new(&stream_handle).unwrap();
+            sink.append(source);
+            sink.play();
+            if shutdown_receiver.recv().is_ok() {}
+        });
+        PlaybackThreadHandle {
+            shutdown_sender,
+            start_system_time: SystemTime::now(),
+            start_audio_time: start_time,
+        }
+    }
 }

@@ -5,9 +5,9 @@ use log::{error, warn};
 use crate::{config::Config, recording_session::RecordingSessionWithPath};
 
 use super::{
-    buffer::{get_volume_at, WavFileReader},
     cut::{cut_multiple_songs, CutInfo},
     cutting_strategy::CuttingStrategy,
+    sample_reader::{get_volume_at, WavFileReader},
     time::AudioTime,
 };
 

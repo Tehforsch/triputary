@@ -2,11 +2,12 @@ use hound::WavSpec;
 use rodio::Source;
 
 use super::{
-    buffer::{get_volume_at, OutOfBoundsError, SampleReader},
+    sample_reader::{get_volume_at, OutOfBoundsError, SampleReader},
     AudioTime,
 };
 
-struct Excerpt {
+#[derive(Clone)]
+pub struct Excerpt {
     pub samples: Vec<i16>,
     pub start: AudioTime,
     pub end: AudioTime,

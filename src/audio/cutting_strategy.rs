@@ -1,12 +1,12 @@
 use log::debug;
 
 use crate::{
-    audio::buffer::{get_volume_at, OutOfBoundsError},
+    audio::sample_reader::{get_volume_at, OutOfBoundsError},
     recording_session::RecordingSession,
     song::Song,
 };
 
-use super::{buffer::WavFileReader, time::AudioTime};
+use super::{sample_reader::WavFileReader, time::AudioTime};
 
 pub trait CuttingStrategy {
     fn get_timestamps(

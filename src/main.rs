@@ -2,7 +2,7 @@ mod audio;
 mod config;
 mod consts;
 mod data_stream;
-// mod gui;
+mod gui;
 mod recording;
 mod recording_session;
 mod song;
@@ -26,9 +26,8 @@ use simplelog::TermLogger;
 use simplelog::TerminalMode;
 use time::UtcOffset;
 
+use crate::gui::Gui;
 use crate::recording_session::get_new_name;
-
-// use crate::gui::StriputaryGui;
 
 fn record(config: &Config) -> Result<()> {
     info!("Using service: {}", config.service);
@@ -48,11 +47,9 @@ fn monitor_dbus(config: &Config) {
     }
 }
 
-// fn run_gui(config: &Config) {
-//     let app = StriputaryGui::new(config);
-//     let native_options = eframe::NativeOptions::default();
-//     eframe::run_native("striputary", native_options, Box::new(|_| Box::new(app)));
-// }
+fn run_gui(config: &Config) {
+    Gui::run(config);
+}
 
 fn cut(config: &Config, session_path: &Path) {
     Cutter::new(config, session_path).cut(SilenceOptimizer);

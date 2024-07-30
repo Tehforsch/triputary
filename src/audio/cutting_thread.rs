@@ -4,7 +4,7 @@ use std::sync::mpsc::Sender;
 use std::thread::JoinHandle;
 use std::thread::{self};
 
-use crate::consts;
+use crate::audio::CutInfo;
 use crate::data_stream::DataStream;
 use crate::song::Song;
 
@@ -15,13 +15,14 @@ struct CuttingThread {
 
 impl CuttingThread {
     pub fn cutting_loop(&mut self) {
-        loop {
-            if let Some(info) = self.to_cut.get_data_mut().pop() {
-                cut_song(&info).unwrap();
-                self.song_sender.send(info.cut.song).unwrap();
-            }
-            self.to_cut.update(consts::RECV_CUT_INFO_TIMEOUT);
-        }
+        todo!()
+        // loop {
+        //     if let Some(info) = self.to_cut.get_data_mut().pop() {
+        //         cut_song(&info).unwrap();
+        //         self.song_sender.send(info.cut.song).unwrap();
+        //     }
+        //     self.to_cut.update(consts::RECV_CUT_INFO_TIMEOUT);
+        // }
     }
 }
 
@@ -61,7 +62,8 @@ impl CuttingThreadHandle {
     }
 
     pub fn get_cut_songs(&mut self) -> &[Song] {
-        self.cut_songs.update(consts::RECV_CUT_SONG_TIMEOUT);
-        self.cut_songs.get_data()
+        todo!()
+        // self.cut_songs.update(consts::RECV_CUT_SONG_TIMEOUT);
+        // self.cut_songs.get_data()
     }
 }

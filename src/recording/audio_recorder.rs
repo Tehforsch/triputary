@@ -1,5 +1,6 @@
 use std::fs::create_dir_all;
 use std::path::Path;
+use std::process::Child;
 use std::process::Command;
 use std::time::Instant;
 
@@ -9,8 +10,6 @@ use anyhow::Result;
 use log::debug;
 use regex::Captures;
 use regex::Regex;
-use subprocess::Exec;
-use subprocess::Popen;
 
 use crate::config::Config;
 use crate::config::Service;
@@ -19,7 +18,7 @@ use crate::consts::STRIPUTARY_SINK_NAME;
 use crate::recording_session::SessionPath;
 
 pub struct AudioRecorder {
-    process: Popen,
+    process: Child,
     pub start_time: Instant,
 }
 
@@ -36,22 +35,21 @@ impl AudioRecorder {
 
     pub fn stop(&mut self) -> Result<()> {
         self.process
-            .terminate()
+            .kill()
             .context("Failed to terminate parec while recording")?;
         Ok(())
     }
 }
 
 impl SoundServer {
-    fn start_recording_process(&self, buffer_file: &Path) -> Result<Popen> {
+    fn start_recording_process(&self, buffer_file: &Path) -> Result<Child> {
         debug!("Starting recording to {:?}", buffer_file);
-        let parec_cmd = Exec::cmd("parec")
+        Command::new("parec")
             .arg("-d")
             .arg(format!("{}.monitor", STRIPUTARY_SINK_NAME))
             .arg("--file-format=wav")
-            .arg(buffer_file.to_str().unwrap());
-        parec_cmd
-            .popen()
+            .arg(buffer_file.to_str().unwrap())
+            .spawn()
             .context("Failed to execute record command - is parec installed?")
     }
 

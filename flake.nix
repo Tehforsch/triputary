@@ -35,11 +35,13 @@
           xorg.libXcursor
           xorg.libXrandr
           xorg.libXi
+          libxkbcommon
           libGL
           libGLU
         ];
         shellHook = ''
           export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${pkgs.libGL}/lib";
+          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${pkgs.libxkbcommon}/lib";
         '';
       };
     };

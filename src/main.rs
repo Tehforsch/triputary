@@ -78,6 +78,7 @@ fn main() -> Result<()> {
     match config.command {
         Command::Record => record(&config)?,
         Command::Cut(ref args) => cut(&config, &args.path),
+        Command::Gui => run_gui(&config),
         Command::MonitorDbus => monitor_dbus(&config),
     }
     Ok(())

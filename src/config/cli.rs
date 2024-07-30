@@ -33,6 +33,8 @@ pub enum Command {
     Record,
     /// Cut a previous recording into individual songs.
     Cut(CutArgs),
+    /// Run the interactive gui for precise cutting.
+    Gui,
     /// Monitor the incoming d-bus messages. Used for
     /// debugging purposes.
     MonitorDbus,

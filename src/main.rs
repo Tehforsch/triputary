@@ -48,7 +48,7 @@ fn monitor_dbus(config: &Config) {
 }
 
 fn run_gui(config: &Config) {
-    Gui::run(config);
+    Gui::run(config)
 }
 
 fn cut(config: &Config, session_path: &Path) {

@@ -1,34 +1,58 @@
-use eframe::{
-    egui::{CentralPanel, Context},
-    App, CreationContext, Frame,
-};
+mod plot;
 
 use crate::config::Config;
+use iced::widget::{button, column, row, text, Canvas, Column};
+use iced::{Alignment, Element};
 
-pub struct Gui {}
+use self::plot::Plot;
 
-impl Gui {
-    pub fn new(_: &CreationContext, _: &Config) -> Self {
-        // TODO(minor): Possibly modify appearance here.
-        Self {}
-    }
+pub struct Gui {
+    plots: Vec<Plot>,
+}
 
-    pub fn run(config: &Config) {
-        let config = config.clone();
-        let native_options = eframe::NativeOptions::default();
-        eframe::run_native(
-            "Striputary",
-            native_options,
-            Box::new(move |cc| Ok(Box::new(Self::new(cc, &config)))),
-        )
-        .unwrap();
+impl Default for Gui {
+    fn default() -> Self {
+        Self {
+            plots: vec![Plot::new()],
+        }
     }
 }
 
-impl App for Gui {
-    fn update(&mut self, ctx: &Context, frame: &mut Frame) {
-        CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Hello World!");
-        });
+impl Gui {
+    pub fn run(_: &Config) {
+        iced::run("Striputary", Self::update, Self::view).unwrap();
     }
+}
+
+impl Gui {
+    fn update(&mut self, m: Message) {
+        match m {
+            Message::Inc => {
+                self.plots.push(Plot::new());
+            }
+            _ => {}
+        }
+    }
+
+    fn view(&self) -> Element<Message> {
+        // Finally, we simply use our `Circle` to create the `Canvas`!
+        // The buttons
+        let increment = button("+").on_press(Message::Inc);
+        // let decrement = button("-").on_press(Message::Dec);
+
+        // The layout
+        let canvases: Vec<_> = self
+            .plots
+            .iter()
+            .map(|plot| Canvas::new(plot).width(500).height(500).into())
+            .collect();
+        let x: Element<Message> = Column::with_children(canvases).into();
+        row![x, increment].into()
+    }
+}
+
+#[derive(Clone, Debug)]
+enum Message {
+    Inc,
+    Dec,
 }

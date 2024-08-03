@@ -1,13 +1,14 @@
 use crate::audio::{
-    AudioTime, Cutter, CuttingStrategy, DbusLengthsStrategy, Manual, WavFileReader,
+    AudioTime, CutInfo, Cutter, CuttingStrategy, DbusLengthsStrategy, Manual, WavFileReader,
 };
 use crate::recording_session::{RecordingSession, RecordingSessionWithPath, SessionPath};
 use anyhow::Result;
+use iced::command::channel;
 use iced::widget::{row, Canvas, Column};
 use iced::{Command, Element};
+use log::debug;
 
 use super::plot::{Plot, PlotMarkerMoved};
-use super::Message;
 
 const CANVAS_WIDTH: f32 = 800.0;
 const CANVAS_HEIGHT: f32 = 80.0;
@@ -16,7 +17,7 @@ const CANVAS_HEIGHT: f32 = 80.0;
 pub enum SessionMessage {
     SetCutPosition(SetCutPosition),
     CutSongs,
-    FinishedCutting,
+    FinishedCutting(CutInfo),
 }
 
 #[derive(Clone, Debug)]
@@ -82,7 +83,12 @@ impl SessionGui {
             SessionMessage::CutSongs => {
                 return self.cut_current_session();
             }
-            _ => panic!("we did it"),
+            SessionMessage::FinishedCutting(cut) => {
+                for plot in self.plots.iter_mut() {
+                    plot.update_on_finished_cut(&cut);
+                }
+                debug!("Finished {}", cut.cut.song);
+            }
         }
         Command::none()
     }
@@ -117,6 +123,7 @@ impl SessionGui {
     pub fn cut_current_session(&self) -> Command<SessionMessage> {
         let path = self.path.0.clone();
         let cuts = self.cuts.clone();
-        Command::perform(Cutter::run(path, cuts), |_| SessionMessage::FinishedCutting)
+        channel(5, move |sender| Cutter::run(path, cuts, sender))
+            .map(|m| SessionMessage::FinishedCutting(m))
     }
 }

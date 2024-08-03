@@ -2,7 +2,6 @@ mod plot;
 mod session_gui;
 mod session_selector;
 
-use crate::audio::{AudioTime, Cutter};
 use crate::config::Config;
 use crate::recording_session::SessionPath;
 use anyhow::Result;

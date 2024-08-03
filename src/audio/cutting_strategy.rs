@@ -126,7 +126,14 @@ impl Manual {
 }
 
 impl CuttingStrategy for Manual {
-    fn get_timestamps(&self, _: &mut WavFileReader, _: &RecordingSession) -> Vec<AudioTime> {
-        self.0.clone()
+    fn get_timestamps(&self, _: &mut WavFileReader, session: &RecordingSession) -> Vec<AudioTime> {
+        // Only take as many as there are (valid!) songs in the session.
+        // TODO: maybe do the song filtering before all of this, so we can
+        // avoid this uglyness
+        self.0
+            .iter()
+            .take(session.songs.len() + 1)
+            .cloned()
+            .collect()
     }
 }

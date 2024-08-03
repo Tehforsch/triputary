@@ -2908,6 +2908,7 @@ dependencies = [
  "chrono",
  "clap",
  "dbus",
+ "futures",
  "hound",
  "iced",
  "log",

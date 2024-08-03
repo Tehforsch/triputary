@@ -3,6 +3,7 @@ use std::{
     process::Child,
 };
 
+use futures::{channel::mpsc::Sender, SinkExt};
 use log::{error, warn};
 
 use crate::recording_session::{RecordingSession, RecordingSessionWithPath};
@@ -57,15 +58,17 @@ fn filter_invalid_songs(reader: &mut WavFileReader, session: &mut RecordingSessi
 
 pub struct Cutter {
     cuts: Vec<CutInfo>,
-    handles: Vec<Child>,
+    handles: Vec<(Child, CutInfo)>,
+    sender: Sender<CutInfo>,
 }
 
 impl Cutter {
-    pub async fn run(path: PathBuf, strategy: impl CuttingStrategy) {
+    pub async fn run(path: PathBuf, strategy: impl CuttingStrategy, sender: Sender<CutInfo>) {
         let cuts = get_cuts(&path, strategy);
         Self {
             cuts,
             handles: vec![],
+            sender,
         }
         .run_internal()
         .await
@@ -85,13 +88,13 @@ impl Cutter {
                 if let Some(cut) = self.pop_front() {
                     let mut command = get_cut_command(&cut).unwrap();
                     self.handles
-                        .push(command.spawn().expect("Failed to cut song."));
+                        .push((command.spawn().expect("Failed to cut song."), cut.clone()));
                 }
             }
             let mut finished: Vec<_> = self
                 .handles
                 .iter_mut()
-                .map(|handle| match handle.try_wait().unwrap() {
+                .map(|(handle, _)| match handle.try_wait().unwrap() {
                     Some(status) => {
                         if status.success() {
                             true
@@ -102,8 +105,12 @@ impl Cutter {
                     None => false,
                 })
                 .collect();
-            let (_, still_running): (Vec<_>, Vec<_>) =
+            let (finished, still_running): (Vec<_>, Vec<_>) =
                 self.handles.drain(..).partition(|_| finished.remove(0));
+
+            for (_, cut) in finished {
+                self.sender.send(cut).await.unwrap()
+            }
             self.handles = still_running;
         }
     }

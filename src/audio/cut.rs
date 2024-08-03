@@ -15,14 +15,14 @@ use crate::consts::{self};
 use crate::recording_session::RecordingSessionWithPath;
 use crate::song::Song;
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Cut {
     pub start_time_secs: f64,
     pub end_time_secs: f64,
     pub song: Song,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct CutInfo {
     pub buffer_file: PathBuf,
     pub music_dir: PathBuf,

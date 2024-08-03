@@ -7,7 +7,7 @@ use iced::{
 };
 
 use crate::{
-    audio::{get_volume_at, interpolate, interpolation_factor, AudioTime, WavFileReader},
+    audio::{get_volume_at, interpolate, interpolation_factor, AudioTime, CutInfo, WavFileReader},
     song::Song,
 };
 
@@ -21,11 +21,13 @@ const MARKER_COLOR: Color = Palette::GRUVBOX_DARK.primary;
 
 pub struct Plot {
     data: Vec<Point>,
-    _song_before: Option<Song>,
-    _song_after: Option<Song>,
+    song_before: Option<Song>,
+    song_after: Option<Song>,
     start: AudioTime,
     end: AudioTime,
     cut_time: AudioTime,
+    finished_cut_before: bool,
+    finished_cut_after: bool,
 }
 
 impl Plot {
@@ -48,11 +50,13 @@ impl Plot {
             .collect();
         Self {
             data,
-            _song_before: song_before,
-            _song_after: song_after,
+            song_before,
+            song_after,
             start,
             end,
             cut_time,
+            finished_cut_before: false,
+            finished_cut_after: false,
         }
     }
 
@@ -64,14 +68,32 @@ impl Plot {
         WIDTH * interpolation_factor(self.start, self.end, time) as f32
     }
 
-    pub fn get_plot_path(&self) -> Path {
+    pub fn get_plot_path(&self, data: &[Point]) -> Path {
         let mut path = Builder::new();
 
-        path.move_to(self.data[0]);
-        for point in self.data.iter() {
-            path.line_to(*point);
+        if data.len() > 0 {
+            path.move_to(data[0]);
+            for point in data.iter() {
+                path.line_to(*point);
+            }
         }
         path.build()
+    }
+
+    /// Return the path left of the marker and the path right
+    /// of the marker, so they can be colored individually.
+    pub fn get_plot_paths(&self) -> (Path, Path) {
+        let cutoff = self
+            .data
+            .iter()
+            .enumerate()
+            .find(|(_, p)| self.pos_to_time(**p) > self.cut_time)
+            .map(|(i, _)| i)
+            .unwrap_or(self.data.len() - 1);
+        (
+            self.get_plot_path(&self.data[..=cutoff]),
+            self.get_plot_path(&self.data[cutoff..]),
+        )
     }
 
     pub fn get_marker_path(&self) -> Path {
@@ -84,6 +106,17 @@ impl Plot {
 
     pub fn set_cut_position(&mut self, time: AudioTime) {
         self.cut_time = time;
+        self.finished_cut_before = false;
+        self.finished_cut_after = false;
+    }
+
+    pub fn update_on_finished_cut(&mut self, cut_song: &CutInfo) {
+        if self.song_before.as_ref() == Some(&cut_song.cut.song) {
+            self.finished_cut_before = true;
+        }
+        if self.song_after.as_ref() == Some(&cut_song.cut.song) {
+            self.finished_cut_after = true;
+        }
     }
 }
 
@@ -126,12 +159,25 @@ impl Program<PlotMarkerMoved> for Plot {
     ) -> Vec<Geometry> {
         let mut frame = Frame::new(renderer, bounds.size());
 
-        let plot = self.get_plot_path();
+        let (plot_before, plot_after) = self.get_plot_paths();
+        let color = |finished_cutting| {
+            if finished_cutting {
+                Color::from_rgb(0.0, 0.8, 0.0)
+            } else {
+                PLOT_COLOR
+            }
+        };
         frame.stroke(
-            &plot,
+            &plot_before,
             Stroke::default()
                 .with_width(PLOT_STROKE_WIDTH)
-                .with_color(PLOT_COLOR),
+                .with_color(color(self.finished_cut_before)),
+        );
+        frame.stroke(
+            &plot_after,
+            Stroke::default()
+                .with_width(PLOT_STROKE_WIDTH)
+                .with_color(color(self.finished_cut_after)),
         );
         let marker = self.get_marker_path();
         frame.stroke(

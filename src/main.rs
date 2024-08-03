@@ -10,8 +10,6 @@ mod song;
 use std::path::Path;
 
 use anyhow::Result;
-use audio::Cutter;
-use audio::SilenceOptimizer;
 use config::Command;
 use config::Config;
 use log::info;

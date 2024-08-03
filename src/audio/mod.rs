@@ -6,6 +6,7 @@ mod playback;
 mod sample_reader;
 mod time;
 
+pub use cut::CutInfo;
 pub use cutter::Cutter;
 pub use cutting_strategy::*;
 pub use sample_reader::get_volume_at;

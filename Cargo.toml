@@ -12,6 +12,7 @@ anyhow = "1.0.86"
 chrono = "0.4.38"
 clap = { version = "4.5.11", features = ["derive"] }
 dbus = "0.9.7"
+futures = "0.3.30"
 hound = "3.5.1"
 iced = { version = "0.12.1", features = ["canvas"] }
 log = "0.4.22"

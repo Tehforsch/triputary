@@ -2,16 +2,16 @@ mod plot;
 mod session_gui;
 mod session_selector;
 
-use crate::audio::AudioTime;
+use crate::audio::{AudioTime, Cutter};
 use crate::config::Config;
 use crate::recording_session::SessionPath;
 use anyhow::Result;
 use iced::application::Application;
-use iced::widget::row;
+use iced::widget::{button, row};
 use iced::{executor, Command, Element, Settings, Theme};
 use log::error;
 
-use self::session_gui::SessionGui;
+use self::session_gui::{SessionGui, SessionMessage};
 use self::session_selector::SessionSelector;
 
 pub struct Gui {
@@ -47,9 +47,9 @@ impl Application for Gui {
                     error!("{}", e);
                 }
             }
-            Message::SetCutPosition(pos) => {
+            Message::SessionMessage(m) => {
                 if let Some(ref mut session) = self.session {
-                    session.set_cut_position(pos);
+                    return session.update(m).map(|mess| Message::SessionMessage(mess));
                 }
             }
         }
@@ -62,9 +62,11 @@ impl Application for Gui {
             .session
             .as_ref()
             .map(|session| session.view())
-            .unwrap_or(row![].into());
-        row![selector, session_view].into()
-        // let decrement = button("-").on_press(Message::Dec);
+            .unwrap_or(row![].into())
+            .map(|message| Message::SessionMessage(message));
+        let cut_songs =
+            button("Cut songs").on_press(Message::SessionMessage(SessionMessage::CutSongs));
+        row![session_view, cut_songs, selector].into()
     }
 
     fn new(config: Self::Flags) -> (Self, iced::Command<Self::Message>) {
@@ -80,16 +82,14 @@ impl Application for Gui {
     fn title(&self) -> String {
         "Striputary".to_string()
     }
+
+    fn theme(&self) -> Theme {
+        Theme::GruvboxDark
+    }
 }
 
 #[derive(Clone, Debug)]
 pub enum Message {
     SelectSession(SessionPath),
-    SetCutPosition(SetCutPosition),
-}
-
-#[derive(Clone, Debug)]
-pub struct SetCutPosition {
-    cut_index: usize,
-    time: AudioTime,
+    SessionMessage(SessionMessage),
 }

@@ -1,19 +1,35 @@
-use crate::audio::{CuttingStrategy, DbusLengthsStrategy, Manual, WavFileReader};
+use crate::audio::{
+    AudioTime, Cutter, CuttingStrategy, DbusLengthsStrategy, Manual, WavFileReader,
+};
 use crate::recording_session::{RecordingSession, RecordingSessionWithPath, SessionPath};
 use anyhow::Result;
 use iced::widget::{row, Canvas, Column};
-use iced::Element;
+use iced::{Command, Element};
 
 use super::plot::{Plot, PlotMarkerMoved};
-use super::{Message, SetCutPosition};
+use super::Message;
 
 const CANVAS_WIDTH: f32 = 800.0;
 const CANVAS_HEIGHT: f32 = 80.0;
+
+#[derive(Clone, Debug)]
+pub enum SessionMessage {
+    SetCutPosition(SetCutPosition),
+    CutSongs,
+    FinishedCutting,
+}
+
+#[derive(Clone, Debug)]
+pub struct SetCutPosition {
+    cut_index: usize,
+    time: AudioTime,
+}
 
 pub struct SessionGui {
     plots: Vec<Plot>,
     reader: WavFileReader,
     session: RecordingSession,
+    path: SessionPath,
     cuts: Manual,
 }
 
@@ -54,10 +70,24 @@ impl SessionGui {
             session: session.session,
             plots,
             cuts,
+            path,
         })
     }
 
-    pub fn view(&self) -> Element<Message> {
+    pub fn update(&mut self, m: SessionMessage) -> Command<SessionMessage> {
+        match m {
+            SessionMessage::SetCutPosition(pos) => {
+                self.set_cut_position(pos);
+            }
+            SessionMessage::CutSongs => {
+                return self.cut_current_session();
+            }
+            _ => panic!("we did it"),
+        }
+        Command::none()
+    }
+
+    pub fn view(&self) -> Element<SessionMessage> {
         let canvases: Vec<_> = self
             .plots
             .iter()
@@ -68,19 +98,25 @@ impl SessionGui {
                     .height(CANVAS_HEIGHT)
                     .into();
                 c.map(move |message| {
-                    Message::SetCutPosition(SetCutPosition {
+                    SessionMessage::SetCutPosition(SetCutPosition {
                         cut_index: i,
                         time: message.time,
                     })
                 })
             })
             .collect();
-        let x: Element<Message> = Column::with_children(canvases).into();
+        let x: Element<SessionMessage> = Column::with_children(canvases).into();
         row![x].into()
     }
 
     pub fn set_cut_position(&mut self, pos: SetCutPosition) {
         self.cuts.0[pos.cut_index] = pos.time;
         self.plots[pos.cut_index].set_cut_position(pos.time);
+    }
+
+    pub fn cut_current_session(&self) -> Command<SessionMessage> {
+        let path = self.path.0.clone();
+        let cuts = self.cuts.clone();
+        Command::perform(Cutter::run(path, cuts), |_| SessionMessage::FinishedCutting)
     }
 }

@@ -1,7 +1,6 @@
 mod audio;
 mod config;
 mod consts;
-mod data_stream;
 mod gui;
 mod recording;
 mod recording_session;
@@ -53,7 +52,7 @@ fn run_gui(config: &Config) {
 }
 
 fn cut(_: &Config, session_path: &Path) {
-    Cutter::new(session_path).cut(SilenceOptimizer);
+    todo!()
 }
 
 fn init_logging(verbosity: usize) {

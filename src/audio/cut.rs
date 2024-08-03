@@ -60,7 +60,7 @@ fn add_metadata_arg_if_present<T: Display>(
     }
 }
 
-fn get_cut_command(info: &CutInfo) -> Result<Command> {
+pub fn get_cut_command(info: &CutInfo) -> Result<Command> {
     let difference = info.cut.end_time_secs - info.cut.start_time_secs;
     let target_file = info.cut.song.get_target_file(&info.music_dir);
     create_dir_all(target_file.parent().unwrap())
@@ -115,41 +115,4 @@ fn get_cut_command(info: &CutInfo) -> Result<Command> {
         .stdout(Stdio::null())
         .stderr(Stdio::null());
     Ok(command)
-}
-
-pub fn cut_multiple_songs(mut cuts: Vec<CutInfo>) -> Result<()> {
-    const MAX_NUM_PROCESSES: usize = 10;
-    let mut handles = vec![];
-    let pop = |cuts: &mut Vec<CutInfo>| {
-        if cuts.is_empty() {
-            None
-        } else {
-            Some(cuts.remove(0))
-        }
-    };
-    while !handles.is_empty() || !cuts.is_empty() {
-        if handles.len() < MAX_NUM_PROCESSES {
-            if let Some(cut) = pop(&mut cuts) {
-                let mut command = get_cut_command(&cut)?;
-                handles.push(command.spawn().expect("Failed to cut song."));
-            }
-        }
-        let mut finished: Vec<_> = handles
-            .iter_mut()
-            .map(|handle| match handle.try_wait().unwrap() {
-                Some(status) => {
-                    if status.success() {
-                        true
-                    } else {
-                        panic!("Cut process failed with {}", status);
-                    }
-                }
-                None => false,
-            })
-            .collect();
-        let (_, still_running): (Vec<_>, Vec<_>) =
-            handles.into_iter().partition(|_| finished.remove(0));
-        handles = still_running;
-    }
-    Ok(())
 }

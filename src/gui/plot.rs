@@ -1,8 +1,9 @@
 use iced::{
-    event::{self, Status},
+    event::Status,
     mouse::{self, Button},
+    theme::Palette,
     widget::canvas::{path::Builder, Event, Frame, Geometry, Path, Program, Stroke},
-    Point, Rectangle, Renderer, Theme,
+    Color, Point, Rectangle, Renderer, Theme,
 };
 
 use crate::{
@@ -10,11 +11,13 @@ use crate::{
     song::Song,
 };
 
-use super::Message;
-
 const WIDTH: f32 = 800.0;
 const HEIGHT: f32 = 50.0;
 const NUM_PLOT_POINTS: usize = 100;
+const PLOT_STROKE_WIDTH: f32 = 1.5;
+const PLOT_COLOR: Color = Palette::GRUVBOX_DARK.text;
+const MARKER_STROKE_WIDTH: f32 = 2.5;
+const MARKER_COLOR: Color = Palette::GRUVBOX_DARK.primary;
 
 pub struct Plot {
     data: Vec<Point>,
@@ -124,9 +127,19 @@ impl Program<PlotMarkerMoved> for Plot {
         let mut frame = Frame::new(renderer, bounds.size());
 
         let plot = self.get_plot_path();
-        frame.stroke(&plot, Stroke::default());
+        frame.stroke(
+            &plot,
+            Stroke::default()
+                .with_width(PLOT_STROKE_WIDTH)
+                .with_color(PLOT_COLOR),
+        );
         let marker = self.get_marker_path();
-        frame.stroke(&marker, Stroke::default());
+        frame.stroke(
+            &marker,
+            Stroke::default()
+                .with_width(MARKER_STROKE_WIDTH)
+                .with_color(MARKER_COLOR),
+        );
 
         // Finally, we produce the geometry
         vec![frame.into_geometry()]

@@ -112,6 +112,7 @@ fn optimize_cut_offset(buffer: &mut WavFileReader, guesses: &[AudioTime]) -> Aud
     min.unwrap().1
 }
 
+#[derive(Clone)]
 pub struct Manual(pub Vec<AudioTime>);
 
 impl Manual {

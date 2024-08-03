@@ -1,17 +1,20 @@
-use crate::audio::{Cutter, CuttingStrategy, DbusLengthsStrategy, WavFileReader};
+use crate::audio::{CuttingStrategy, DbusLengthsStrategy, Manual, WavFileReader};
 use crate::recording_session::{RecordingSession, RecordingSessionWithPath, SessionPath};
 use anyhow::Result;
 use iced::widget::{row, Canvas, Column};
 use iced::Element;
 
-use super::plot::Plot;
-use super::Message;
+use super::plot::{Plot, PlotMarkerMoved};
+use super::{Message, SetCutPosition};
+
+const CANVAS_WIDTH: f32 = 800.0;
+const CANVAS_HEIGHT: f32 = 80.0;
 
 pub struct SessionGui {
     plots: Vec<Plot>,
     reader: WavFileReader,
     session: RecordingSession,
-    cutter: Cutter,
+    cuts: Manual,
 }
 
 fn load_plots(reader: &mut WavFileReader, session: &RecordingSession) -> Vec<Plot> {
@@ -44,13 +47,13 @@ impl SessionGui {
     pub fn new(path: SessionPath) -> Result<SessionGui> {
         let session = RecordingSessionWithPath::load_from_dir(&path.0)?;
         let mut reader = hound::WavReader::open(session.path.get_buffer_file())?;
-        let cutter = Cutter::new(&path.0);
         let plots = load_plots(&mut reader, &session.session);
+        let cuts = Manual::new(&mut reader, &session.session, DbusLengthsStrategy);
         Ok(Self {
             reader,
             session: session.session,
             plots,
-            cutter,
+            cuts,
         })
     }
 
@@ -58,9 +61,26 @@ impl SessionGui {
         let canvases: Vec<_> = self
             .plots
             .iter()
-            .map(|plot| Canvas::new(plot).width(500).height(500).into())
+            .enumerate()
+            .map(|(i, plot)| {
+                let c: Element<PlotMarkerMoved> = Canvas::new(plot)
+                    .width(CANVAS_WIDTH)
+                    .height(CANVAS_HEIGHT)
+                    .into();
+                c.map(move |message| {
+                    Message::SetCutPosition(SetCutPosition {
+                        cut_index: i,
+                        time: message.time,
+                    })
+                })
+            })
             .collect();
         let x: Element<Message> = Column::with_children(canvases).into();
         row![x].into()
+    }
+
+    pub fn set_cut_position(&mut self, pos: SetCutPosition) {
+        self.cuts.0[pos.cut_index] = pos.time;
+        self.plots[pos.cut_index].set_cut_position(pos.time);
     }
 }

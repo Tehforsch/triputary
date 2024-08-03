@@ -20,10 +20,8 @@ impl SessionManager {
         Self { dirs }
     }
 
-    pub fn iter_relative_paths_with_indices(
-        &self,
-    ) -> impl Iterator<Item = (SessionIdentifier, PathBuf)> + '_ {
-        Box::new(self.enumerate().map(|(index, dir)| (index, dir.clone())))
+    pub fn iter(&self) -> impl Iterator<Item = &PathBuf> + '_ {
+        self.dirs.iter()
     }
 
     fn enumerate(&self) -> impl Iterator<Item = (SessionIdentifier, &PathBuf)> {

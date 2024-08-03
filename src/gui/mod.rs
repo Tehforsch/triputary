@@ -2,6 +2,7 @@ mod plot;
 mod session_gui;
 mod session_selector;
 
+use crate::audio::AudioTime;
 use crate::config::Config;
 use crate::recording_session::SessionPath;
 use anyhow::Result;
@@ -46,6 +47,11 @@ impl Application for Gui {
                     error!("{}", e);
                 }
             }
+            Message::SetCutPosition(pos) => {
+                if let Some(ref mut session) = self.session {
+                    session.set_cut_position(pos);
+                }
+            }
         }
         Command::none()
     }
@@ -79,4 +85,11 @@ impl Application for Gui {
 #[derive(Clone, Debug)]
 pub enum Message {
     SelectSession(SessionPath),
+    SetCutPosition(SetCutPosition),
+}
+
+#[derive(Clone, Debug)]
+pub struct SetCutPosition {
+    cut_index: usize,
+    time: AudioTime,
 }

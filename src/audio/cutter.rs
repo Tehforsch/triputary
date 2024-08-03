@@ -2,7 +2,7 @@ use std::path::Path;
 
 use log::{error, warn};
 
-use crate::{config::Config, recording_session::RecordingSessionWithPath};
+use crate::recording_session::RecordingSessionWithPath;
 
 use super::{
     cut::{cut_multiple_songs, CutInfo},

@@ -8,6 +8,10 @@ use crate::{
 
 use super::{sample_reader::WavFileReader, time::AudioTime};
 
+pub static MIN_OFFSET: f64 = -3.;
+pub static MAX_OFFSET: f64 = 3.;
+pub static NUM_OFFSETS_TO_TRY: i64 = 10000;
+
 pub trait CuttingStrategy {
     fn get_timestamps(
         &self,
@@ -108,6 +112,20 @@ fn optimize_cut_offset(buffer: &mut WavFileReader, guesses: &[AudioTime]) -> Aud
     min.unwrap().1
 }
 
-pub static MIN_OFFSET: f64 = -3.;
-pub static MAX_OFFSET: f64 = 3.;
-pub static NUM_OFFSETS_TO_TRY: i64 = 10000;
+pub struct Manual(pub Vec<AudioTime>);
+
+impl Manual {
+    pub fn new(
+        reader: &mut WavFileReader,
+        session: &RecordingSession,
+        strategy: impl CuttingStrategy,
+    ) -> Self {
+        Self(strategy.get_timestamps(reader, session))
+    }
+}
+
+impl CuttingStrategy for Manual {
+    fn get_timestamps(&self, _: &mut WavFileReader, _: &RecordingSession) -> Vec<AudioTime> {
+        self.0.clone()
+    }
+}

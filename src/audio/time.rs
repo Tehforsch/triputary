@@ -51,6 +51,14 @@ impl AudioTime {
     }
 }
 
+pub fn interpolate(start: AudioTime, end: AudioTime, factor: f64) -> AudioTime {
+    start + (end - start) * factor
+}
+
+pub fn interpolation_factor(start: AudioTime, end: AudioTime, x: AudioTime) -> f64 {
+    (x.time - start.time) / (end.time - start.time)
+}
+
 impl ops::Sub<AudioTime> for AudioTime {
     type Output = AudioTime;
 
@@ -68,6 +76,14 @@ impl ops::Add<AudioTime> for AudioTime {
         assert_eq!(self.sample_rate, rhs.sample_rate);
         assert_eq!(self.channels, rhs.channels);
         AudioTime::from_time_same_spec(self.time + rhs.time, self)
+    }
+}
+
+impl ops::Mul<f64> for AudioTime {
+    type Output = AudioTime;
+
+    fn mul(self, fac: f64) -> AudioTime {
+        AudioTime::from_time_same_spec(self.time * fac, self)
     }
 }
 

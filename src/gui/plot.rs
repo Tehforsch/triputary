@@ -1,20 +1,28 @@
 use iced::{
-    mouse,
-    widget::canvas::{path::Builder, Frame, Geometry, Path, Program, Stroke},
+    event::{self, Status},
+    mouse::{self, Button},
+    widget::canvas::{path::Builder, Event, Frame, Geometry, Path, Program, Stroke},
     Point, Rectangle, Renderer, Theme,
 };
 
 use crate::{
-    audio::{AudioTime, SampleReader, WavFileReader},
+    audio::{get_volume_at, interpolate, interpolation_factor, AudioTime, WavFileReader},
     song::Song,
 };
 
 use super::Message;
 
+const WIDTH: f32 = 800.0;
+const HEIGHT: f32 = 50.0;
+const NUM_PLOT_POINTS: usize = 100;
+
 pub struct Plot {
     data: Vec<Point>,
     _song_before: Option<Song>,
     _song_after: Option<Song>,
+    start: AudioTime,
+    end: AudioTime,
+    cut_time: AudioTime,
 }
 
 impl Plot {
@@ -22,28 +30,38 @@ impl Plot {
         reader: &mut WavFileReader,
         song_before: Option<Song>,
         song_after: Option<Song>,
-        timing: AudioTime,
+        cut_time: AudioTime,
     ) -> Self {
-        let delta = AudioTime::from_time_same_spec(3.0, timing);
-        let data = reader
-            .extract_audio(timing - delta, timing + delta)
-            .unwrap();
-        let data = data
-            .into_iter()
-            .enumerate()
-            .map(|(i, vol)| {
-                let vol = vol as f32 / i16::MAX as f32;
-                Point::new(i as f32, vol * 100.0)
+        let delta = AudioTime::from_time_same_spec(3.0, cut_time);
+        let start = cut_time - delta;
+        let end = cut_time + delta;
+        let data = (0..NUM_PLOT_POINTS)
+            .map(|i| {
+                let f = i as f32 / NUM_PLOT_POINTS as f32;
+                let time = interpolate(start, end, f as f64);
+                let vol = get_volume_at(reader, time).unwrap_or(0.0) as f32;
+                Point::new(f * WIDTH, HEIGHT / 2.0 + vol * HEIGHT)
             })
             .collect();
         Self {
             data,
             _song_before: song_before,
             _song_after: song_after,
+            start,
+            end,
+            cut_time,
         }
     }
 
-    pub fn get_path(&self) -> Path {
+    fn pos_to_time(&self, pos: Point) -> AudioTime {
+        interpolate(self.start, self.end, (pos.x / WIDTH) as f64)
+    }
+
+    fn time_to_pos(&self, time: AudioTime) -> f32 {
+        WIDTH * interpolation_factor(self.start, self.end, time) as f32
+    }
+
+    pub fn get_plot_path(&self) -> Path {
         let mut path = Builder::new();
 
         path.move_to(self.data[0]);
@@ -52,10 +70,48 @@ impl Plot {
         }
         path.build()
     }
+
+    pub fn get_marker_path(&self) -> Path {
+        let mut path = Builder::new();
+        let x = self.time_to_pos(self.cut_time);
+        path.move_to(Point::new(x, 0.0));
+        path.line_to(Point::new(x, HEIGHT));
+        path.build()
+    }
+
+    pub fn set_cut_position(&mut self, time: AudioTime) {
+        self.cut_time = time;
+    }
 }
 
-impl Program<Message> for Plot {
+pub struct PlotMarkerMoved {
+    pub time: AudioTime,
+}
+
+impl Program<PlotMarkerMoved> for Plot {
     type State = ();
+
+    fn update(
+        &self,
+        _state: &mut Self::State,
+        event: Event,
+        bounds: Rectangle,
+        cursor: mouse::Cursor,
+    ) -> (Status, Option<PlotMarkerMoved>) {
+        if let Event::Mouse(mouse::Event::ButtonPressed(ev)) = event {
+            if ev == Button::Left {
+                if let Some(pos) = cursor.position_in(bounds) {
+                    return (
+                        Status::Ignored,
+                        Some(PlotMarkerMoved {
+                            time: self.pos_to_time(pos),
+                        }),
+                    );
+                }
+            }
+        }
+        (Status::Ignored, None)
+    }
 
     fn draw(
         &self,
@@ -67,8 +123,10 @@ impl Program<Message> for Plot {
     ) -> Vec<Geometry> {
         let mut frame = Frame::new(renderer, bounds.size());
 
-        let path = self.get_path();
-        frame.stroke(&path, Stroke::default());
+        let plot = self.get_plot_path();
+        frame.stroke(&plot, Stroke::default());
+        let marker = self.get_marker_path();
+        frame.stroke(&marker, Stroke::default());
 
         // Finally, we produce the geometry
         vec![frame.into_geometry()]

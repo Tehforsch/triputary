@@ -1,58 +1,82 @@
 mod plot;
+mod session_gui;
+mod session_selector;
 
 use crate::config::Config;
-use iced::widget::{button, column, row, text, Canvas, Column};
-use iced::{Alignment, Element};
+use crate::recording_session::SessionPath;
+use anyhow::Result;
+use iced::application::Application;
+use iced::widget::row;
+use iced::{executor, Command, Element, Settings, Theme};
+use log::error;
 
-use self::plot::Plot;
+use self::session_gui::SessionGui;
+use self::session_selector::SessionSelector;
 
 pub struct Gui {
-    plots: Vec<Plot>,
-}
-
-impl Default for Gui {
-    fn default() -> Self {
-        Self {
-            plots: vec![Plot::new()],
-        }
-    }
+    session: Option<SessionGui>,
+    session_selector: SessionSelector,
 }
 
 impl Gui {
-    pub fn run(_: &Config) {
-        iced::run("Striputary", Self::update, Self::view).unwrap();
+    fn select_session(&mut self, path: SessionPath) -> Result<()> {
+        self.session = Some(SessionGui::new(path)?);
+        Ok(())
+    }
+
+    pub fn start(config: &Config) {
+        let settings = Settings::with_flags(config.clone());
+        Gui::run(settings).unwrap()
     }
 }
 
-impl Gui {
-    fn update(&mut self, m: Message) {
+impl Application for Gui {
+    type Executor = executor::Default;
+
+    type Message = Message;
+
+    type Theme = Theme;
+
+    type Flags = Config;
+
+    fn update(&mut self, m: Message) -> Command<Message> {
         match m {
-            Message::Inc => {
-                self.plots.push(Plot::new());
+            Message::SelectSession(path) => {
+                if let Err(e) = self.select_session(path) {
+                    error!("{}", e);
+                }
             }
-            _ => {}
         }
+        Command::none()
     }
 
     fn view(&self) -> Element<Message> {
-        // Finally, we simply use our `Circle` to create the `Canvas`!
-        // The buttons
-        let increment = button("+").on_press(Message::Inc);
+        let selector = self.session_selector.view();
+        let session_view = self
+            .session
+            .as_ref()
+            .map(|session| session.view())
+            .unwrap_or(row![].into());
+        row![selector, session_view].into()
         // let decrement = button("-").on_press(Message::Dec);
+    }
 
-        // The layout
-        let canvases: Vec<_> = self
-            .plots
-            .iter()
-            .map(|plot| Canvas::new(plot).width(500).height(500).into())
-            .collect();
-        let x: Element<Message> = Column::with_children(canvases).into();
-        row![x, increment].into()
+    fn new(config: Self::Flags) -> (Self, iced::Command<Self::Message>) {
+        (
+            Self {
+                session_selector: SessionSelector::new(&config),
+                session: None,
+            },
+            Command::none(),
+        )
+    }
+
+    fn title(&self) -> String {
+        "Striputary".to_string()
     }
 }
 
 #[derive(Clone, Debug)]
-enum Message {
-    Inc,
-    Dec,
+pub enum Message {
+    SelectSession(SessionPath),
 }

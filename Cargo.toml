@@ -13,6 +13,7 @@ chrono = "0.4.38"
 clap = { version = "4.5.11", features = ["derive"] }
 dbus = "0.9.7"
 hound = "3.5.1"
+iced = { version = "0.12.1", features = ["canvas"] }
 log = "0.4.22"
 regex = "1"
 rodio = "0.19"
@@ -22,8 +23,3 @@ shellexpand = "3.1.0"
 simplelog = "0.12.2"
 time = { version = "0.3.36", default-features = false }
 xdg = "2.5.2"
-
-[dependencies.iced]
-git = "https://github.com/iced-rs/iced.git"
-rev = "cdb18e610a72b4a025d7e1890140393adee5b087"
-features = ["canvas"]

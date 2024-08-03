@@ -61,6 +61,12 @@ impl RecordingSession {
 #[derive(Debug, Clone)]
 pub struct SessionPath(pub PathBuf);
 
+impl<P: AsRef<Path>> From<P> for SessionPath {
+    fn from(value: P) -> Self {
+        Self(value.as_ref().to_owned())
+    }
+}
+
 impl SessionPath {
     pub fn get_yaml_file(&self) -> PathBuf {
         self.0.join(consts::DEFAULT_SESSION_FILE)

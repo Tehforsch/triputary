@@ -10,6 +10,6 @@ mod time;
 pub use cut::CutInfo;
 pub use cutter::Cutter;
 pub use cutting_strategy::*;
-pub use excerpt::Excerpt;
 pub use sample_reader::SampleReader;
+pub use sample_reader::WavFileReader;
 pub use time::AudioTime;

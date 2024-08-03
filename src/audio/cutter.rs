@@ -17,13 +17,13 @@ pub struct Cutter {
 }
 
 impl Cutter {
-    pub fn new(_: &Config, path: &Path) -> Self {
+    pub fn new(path: &Path) -> Self {
         let session = RecordingSessionWithPath::load_from_dir(path).unwrap();
         let reader = hound::WavReader::open(session.path.get_buffer_file()).unwrap();
         Self { reader, session }
     }
 
-    fn get_cuts(&mut self, s: impl CuttingStrategy) -> Vec<CutInfo> {
+    pub fn get_cuts(&mut self, s: impl CuttingStrategy) -> Vec<CutInfo> {
         let timestamps = s.get_timestamps(&mut self.reader, &self.session.session);
         assert_eq!(timestamps.len(), self.session.session.songs.len() + 1);
         timestamps

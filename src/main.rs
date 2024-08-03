@@ -5,6 +5,7 @@ mod data_stream;
 mod gui;
 mod recording;
 mod recording_session;
+mod session_manager;
 mod song;
 
 use std::path::Path;
@@ -48,11 +49,11 @@ fn monitor_dbus(config: &Config) {
 }
 
 fn run_gui(config: &Config) {
-    Gui::run(config)
+    Gui::start(config);
 }
 
-fn cut(config: &Config, session_path: &Path) {
-    Cutter::new(config, session_path).cut(SilenceOptimizer);
+fn cut(_: &Config, session_path: &Path) {
+    Cutter::new(session_path).cut(SilenceOptimizer);
 }
 
 fn init_logging(verbosity: usize) {

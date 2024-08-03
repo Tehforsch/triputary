@@ -24,9 +24,9 @@ pub struct Cut {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CutInfo {
-    buffer_file: PathBuf,
-    music_dir: PathBuf,
-    cut: Cut,
+    pub buffer_file: PathBuf,
+    pub music_dir: PathBuf,
+    pub cut: Cut,
 }
 
 impl CutInfo {
